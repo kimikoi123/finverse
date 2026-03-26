@@ -23,6 +23,7 @@ interface TripDashboardProps {
   onRemoveMember: (id: string) => boolean | undefined;
   onAddExpense: (expense: Omit<Expense, 'id' | 'createdAt'>) => Expense | undefined;
   onRemoveExpense: (id: string) => void;
+  onEditExpense: (id: string, updates: Partial<Expense>) => void;
   onUpdateTrip: (updates: Partial<Trip>) => void;
   showToast: (message: string, onCommit: () => void) => string;
 }
@@ -46,13 +47,31 @@ export default function TripDashboard({
   onRemoveMember,
   onAddExpense,
   onRemoveExpense,
+  onEditExpense,
   showToast,
 }: TripDashboardProps) {
   const [activeTab, setActiveTab] = useState('expenses');
   const [showExpenseForm, setShowExpenseForm] = useState(false);
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
 
   const handleAddExpense = (expense: Omit<Expense, 'id' | 'createdAt'>) => {
     onAddExpense(expense);
+    setShowExpenseForm(false);
+  };
+
+  const handleEditExpense = (id: string, updates: Omit<Expense, 'id' | 'createdAt'>) => {
+    onEditExpense(id, updates);
+    setEditingExpense(null);
+    setShowExpenseForm(false);
+  };
+
+  const handleStartEdit = (expense: Expense) => {
+    setEditingExpense(expense);
+    setShowExpenseForm(true);
+  };
+
+  const handleCancelForm = () => {
+    setEditingExpense(null);
     setShowExpenseForm(false);
   };
 
@@ -153,10 +172,13 @@ export default function TripDashboard({
 
           {showExpenseForm && (
             <ExpenseForm
+              key={editingExpense?.id ?? 'new'}
               members={trip.members}
               baseCurrency={trip.baseCurrency}
               onAdd={handleAddExpense}
-              onCancel={() => setShowExpenseForm(false)}
+              onCancel={handleCancelForm}
+              editingExpense={editingExpense ?? undefined}
+              onEdit={handleEditExpense}
             />
           )}
 
@@ -164,6 +186,7 @@ export default function TripDashboard({
             expenses={trip.expenses}
             members={trip.members}
             onRemove={onRemoveExpense}
+            onEdit={handleStartEdit}
             showToast={showToast}
           />
         </div>

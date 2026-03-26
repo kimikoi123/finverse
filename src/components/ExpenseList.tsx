@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Trash2, Utensils, Car, Home, Ticket, ShoppingBag, ReceiptText, Calendar, Search, X } from 'lucide-react';
+import { Pencil, Trash2, Utensils, Car, Home, Ticket, ShoppingBag, ReceiptText, Calendar, Search, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { formatCurrency } from '../utils/currencies';
 import type { Expense, Member } from '../types';
@@ -35,10 +35,11 @@ interface ExpenseListProps {
   expenses: Expense[];
   members: Member[];
   onRemove: (id: string) => void;
+  onEdit: (expense: Expense) => void;
   showToast: (message: string, onCommit: () => void) => string;
 }
 
-export default function ExpenseList({ expenses, members, onRemove, showToast }: ExpenseListProps) {
+export default function ExpenseList({ expenses, members, onRemove, onEdit, showToast }: ExpenseListProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [pendingDeletes, setPendingDeletes] = useState<Set<string>>(new Set());
@@ -193,12 +194,20 @@ export default function ExpenseList({ expenses, members, onRemove, showToast }: 
                       {' · '}
                       {expense.participants.length} people
                     </p>
-                    <button
-                      onClick={() => handleRemove(expense)}
-                      className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded text-text-secondary hover:text-danger transition-colors sm:opacity-0 sm:group-hover:opacity-100 shrink-0"
-                    >
-                      <Trash2 size={14} />
-                    </button>
+                    <div className="flex items-center shrink-0 sm:opacity-0 sm:group-hover:opacity-100">
+                      <button
+                        onClick={() => onEdit(expense)}
+                        className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded text-text-secondary hover:text-primary transition-colors"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                      <button
+                        onClick={() => handleRemove(expense)}
+                        className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded text-text-secondary hover:text-danger transition-colors"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

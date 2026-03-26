@@ -18,6 +18,7 @@ function App() {
     removeMember,
     addExpense,
     removeExpense,
+    editExpense,
     exportData,
     importData,
   } = useTrip();
@@ -41,6 +42,7 @@ function App() {
           onRemoveMember={removeMember}
           onAddExpense={addExpense}
           onRemoveExpense={removeExpense}
+          onEditExpense={editExpense}
           onUpdateTrip={(updates) => updateTrip(activeTrip.id, updates)}
           showToast={showToast}
         />

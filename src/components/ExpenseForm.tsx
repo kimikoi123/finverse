@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, X } from 'lucide-react';
+import { Plus, Check, X } from 'lucide-react';
 import { CURRENCIES } from '../utils/currencies';
 import type { Member, Expense, SplitType } from '../types';
 
@@ -8,18 +8,21 @@ interface ExpenseFormProps {
   baseCurrency: string;
   onAdd: (expense: Omit<Expense, 'id' | 'createdAt'>) => void;
   onCancel: () => void;
+  editingExpense?: Expense;
+  onEdit?: (id: string, updates: Omit<Expense, 'id' | 'createdAt'>) => void;
 }
 
-export default function ExpenseForm({ members, baseCurrency, onAdd, onCancel }: ExpenseFormProps) {
-  const [description, setDescription] = useState('');
-  const [amount, setAmount] = useState('');
-  const [currency, setCurrency] = useState(baseCurrency);
-  const [paidBy, setPaidBy] = useState(members[0]?.id ?? '');
-  const [splitType, setSplitType] = useState<SplitType>('equal');
-  const [participants, setParticipants] = useState(members.map((m) => m.id));
-  const [customAmounts, setCustomAmounts] = useState<Record<string, number>>({});
-  const [category, setCategory] = useState('general');
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+export default function ExpenseForm({ members, baseCurrency, onAdd, onCancel, editingExpense, onEdit }: ExpenseFormProps) {
+  const isEditing = !!editingExpense;
+  const [description, setDescription] = useState(editingExpense?.description ?? '');
+  const [amount, setAmount] = useState(editingExpense ? String(editingExpense.amount) : '');
+  const [currency, setCurrency] = useState(editingExpense?.currency ?? baseCurrency);
+  const [paidBy, setPaidBy] = useState(editingExpense?.paidBy ?? members[0]?.id ?? '');
+  const [splitType, setSplitType] = useState<SplitType>(editingExpense?.splitType ?? 'equal');
+  const [participants, setParticipants] = useState(editingExpense?.participants ?? members.map((m) => m.id));
+  const [customAmounts, setCustomAmounts] = useState<Record<string, number>>(editingExpense?.customAmounts ?? {});
+  const [category, setCategory] = useState(editingExpense?.category ?? 'general');
+  const [date, setDate] = useState(() => editingExpense?.date ?? new Date().toISOString().slice(0, 10));
 
   const CATEGORIES = [
     { value: 'food', label: 'Food & Drinks' },
@@ -61,14 +64,18 @@ export default function ExpenseForm({ members, baseCurrency, onAdd, onCancel }: 
       }
     }
 
-    onAdd(expense);
+    if (isEditing && onEdit) {
+      onEdit(editingExpense.id, expense);
+    } else {
+      onAdd(expense);
+    }
   };
 
   return (
     <form onSubmit={handleSubmit} className="bg-surface rounded-xl border border-border p-4 space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-text-primary uppercase tracking-wide">
-          New Expense
+          {isEditing ? 'Edit Expense' : 'New Expense'}
         </h3>
         <button
           type="button"
@@ -233,8 +240,8 @@ export default function ExpenseForm({ members, baseCurrency, onAdd, onCancel }: 
         type="submit"
         className="w-full py-2.5 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors text-sm font-medium flex items-center justify-center gap-2"
       >
-        <Plus size={16} />
-        Add Expense
+        {isEditing ? <Check size={16} /> : <Plus size={16} />}
+        {isEditing ? 'Save Changes' : 'Add Expense'}
       </button>
     </form>
   );
