@@ -1,8 +1,10 @@
 import { useTrip } from './hooks/useTrip';
 import { useExchangeRates } from './hooks/useExchangeRates';
+import { useToast } from './hooks/useToast';
 import Header from './components/Header';
 import TripList from './components/TripList';
 import TripDashboard from './components/TripDashboard';
+import ToastContainer from './components/Toast';
 
 function App() {
   const {
@@ -21,6 +23,7 @@ function App() {
   } = useTrip();
 
   const exchangeRates = useExchangeRates();
+  const { toasts, showToast, undoToast, dismissToast, duration } = useToast();
 
   return (
     <div className="min-h-screen bg-[#13131f]">
@@ -39,6 +42,7 @@ function App() {
           onAddExpense={addExpense}
           onRemoveExpense={removeExpense}
           onUpdateTrip={(updates) => updateTrip(activeTrip.id, updates)}
+          showToast={showToast}
         />
       ) : (
         <TripList
@@ -46,8 +50,15 @@ function App() {
           onSelect={setActiveTrip}
           onCreate={createTrip}
           onDelete={deleteTrip}
+          showToast={showToast}
         />
       )}
+      <ToastContainer
+        toasts={toasts}
+        duration={duration}
+        onUndo={undoToast}
+        onDismiss={dismissToast}
+      />
     </div>
   );
 }

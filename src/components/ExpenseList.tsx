@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Trash2, Utensils, Car, Home, Ticket, ShoppingBag, ReceiptText } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { formatCurrency } from '../utils/currencies';
@@ -25,12 +26,33 @@ interface ExpenseListProps {
   expenses: Expense[];
   members: Member[];
   onRemove: (id: string) => void;
+  showToast: (message: string, onCommit: () => void) => string;
 }
 
-export default function ExpenseList({ expenses, members, onRemove }: ExpenseListProps) {
+export default function ExpenseList({ expenses, members, onRemove, showToast }: ExpenseListProps) {
+  const [pendingDeletes, setPendingDeletes] = useState<Set<string>>(new Set());
   const getMemberName = (id: string) => members.find((m) => m.id === id)?.name ?? 'Unknown';
 
-  if (expenses.length === 0) {
+  const handleRemove = (expense: Expense) => {
+    setPendingDeletes((prev) => new Set(prev).add(expense.id));
+
+    showToast(`"${expense.description}" deleted`, () => {
+      onRemove(expense.id);
+    });
+
+    // Clean up pending state after toast duration (whether committed or undone)
+    setTimeout(() => {
+      setPendingDeletes((prev) => {
+        const next = new Set(prev);
+        next.delete(expense.id);
+        return next;
+      });
+    }, 5500);
+  };
+
+  const visibleExpenses = expenses.filter((e) => !pendingDeletes.has(e.id));
+
+  if (visibleExpenses.length === 0 && expenses.length === 0) {
     return (
       <div className="text-center py-8">
         <ReceiptText size={32} className="text-text-secondary mx-auto mb-2" />
@@ -39,9 +61,17 @@ export default function ExpenseList({ expenses, members, onRemove }: ExpenseList
     );
   }
 
+  if (visibleExpenses.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-text-secondary text-sm">All expenses pending deletion...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-2">
-      {[...expenses].reverse().map((expense) => {
+      {[...visibleExpenses].reverse().map((expense) => {
         const Icon = CATEGORY_ICONS[expense.category] ?? ReceiptText;
         const colorClass = CATEGORY_COLORS[expense.category] ?? CATEGORY_COLORS['general']!;
 
@@ -71,7 +101,7 @@ export default function ExpenseList({ expenses, members, onRemove }: ExpenseList
                   {expense.participants.length} people
                 </p>
                 <button
-                  onClick={() => onRemove(expense.id)}
+                  onClick={() => handleRemove(expense)}
                   className="p-1 rounded text-text-secondary hover:text-danger transition-colors opacity-0 group-hover:opacity-100 shrink-0"
                 >
                   <Trash2 size={14} />

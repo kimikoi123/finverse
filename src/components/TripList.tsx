@@ -8,12 +8,30 @@ interface TripListProps {
   onSelect: (id: string | null) => void;
   onCreate: (name: string, currency?: string) => Trip;
   onDelete: (id: string) => void;
+  showToast: (message: string, onCommit: () => void) => string;
 }
 
-export default function TripList({ trips, onSelect, onCreate, onDelete }: TripListProps) {
+export default function TripList({ trips, onSelect, onCreate, onDelete, showToast }: TripListProps) {
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState('');
   const [currency, setCurrency] = useState('USD');
+  const [pendingDeletes, setPendingDeletes] = useState<Set<string>>(new Set());
+
+  const handleDelete = (trip: Trip) => {
+    setPendingDeletes((prev) => new Set(prev).add(trip.id));
+
+    showToast(`"${trip.name}" deleted`, () => {
+      onDelete(trip.id);
+    });
+
+    setTimeout(() => {
+      setPendingDeletes((prev) => {
+        const next = new Set(prev);
+        next.delete(trip.id);
+        return next;
+      });
+    }, 5500);
+  };
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,7 +99,7 @@ export default function TripList({ trips, onSelect, onCreate, onDelete }: TripLi
         </div>
       ) : (
         <div className="space-y-2">
-          {trips.map((trip) => (
+          {trips.filter((t) => !pendingDeletes.has(t.id)).map((trip) => (
             <div
               key={trip.id}
               className="bg-surface rounded-xl border border-border hover:border-primary/40 transition-colors cursor-pointer group"
@@ -108,7 +126,7 @@ export default function TripList({ trips, onSelect, onCreate, onDelete }: TripLi
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (confirm(`Delete "${trip.name}"?`)) onDelete(trip.id);
+                      handleDelete(trip);
                     }}
                     className="p-2 rounded-lg text-text-secondary hover:text-danger hover:bg-danger/10 transition-colors opacity-0 group-hover:opacity-100"
                   >

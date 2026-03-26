@@ -24,6 +24,7 @@ interface TripDashboardProps {
   onAddExpense: (expense: Omit<Expense, 'id' | 'createdAt'>) => Expense | undefined;
   onRemoveExpense: (id: string) => void;
   onUpdateTrip: (updates: Partial<Trip>) => void;
+  showToast: (message: string, onCommit: () => void) => string;
 }
 
 interface Tab {
@@ -45,6 +46,7 @@ export default function TripDashboard({
   onRemoveMember,
   onAddExpense,
   onRemoveExpense,
+  showToast,
 }: TripDashboardProps) {
   const [activeTab, setActiveTab] = useState('expenses');
   const [showExpenseForm, setShowExpenseForm] = useState(false);
@@ -162,6 +164,7 @@ export default function TripDashboard({
             expenses={trip.expenses}
             members={trip.members}
             onRemove={onRemoveExpense}
+            showToast={showToast}
           />
         </div>
       )}
@@ -178,8 +181,10 @@ export default function TripDashboard({
       {activeTab === 'members' && (
         <MemberManager
           members={trip.members}
+          expenses={trip.expenses}
           onAdd={onAddMember}
           onRemove={onRemoveMember}
+          showToast={showToast}
         />
       )}
     </div>

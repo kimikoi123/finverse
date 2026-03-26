@@ -1,17 +1,20 @@
 import { useState } from 'react';
 import { Plus, X, UserPlus } from 'lucide-react';
 import { getInitials, getAvatarColor } from '../utils/helpers';
-import type { Member } from '../types';
+import type { Member, Expense } from '../types';
 
 interface MemberManagerProps {
   members: Member[];
+  expenses: Expense[];
   onAdd: (name: string) => Member | undefined;
   onRemove: (id: string) => boolean | undefined;
+  showToast: (message: string, onCommit: () => void) => string;
 }
 
-export default function MemberManager({ members, onAdd, onRemove }: MemberManagerProps) {
+export default function MemberManager({ members, expenses, onAdd, onRemove, showToast }: MemberManagerProps) {
   const [name, setName] = useState('');
   const [showInput, setShowInput] = useState(false);
+  const [pendingDeletes, setPendingDeletes] = useState<Set<string>>(new Set());
 
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,11 +23,37 @@ export default function MemberManager({ members, onAdd, onRemove }: MemberManage
     setName('');
   };
 
+  const memberHasExpenses = (memberId: string) =>
+    expenses.some((e) => e.paidBy === memberId || e.participants.includes(memberId));
+
+  const handleRemove = (member: Member) => {
+    if (memberHasExpenses(member.id)) {
+      alert(`Can't remove ${member.name} — they have expenses.`);
+      return;
+    }
+
+    setPendingDeletes((prev) => new Set(prev).add(member.id));
+
+    showToast(`"${member.name}" removed`, () => {
+      onRemove(member.id);
+    });
+
+    setTimeout(() => {
+      setPendingDeletes((prev) => {
+        const next = new Set(prev);
+        next.delete(member.id);
+        return next;
+      });
+    }, 5500);
+  };
+
+  const visibleMembers = members.filter((m) => !pendingDeletes.has(m.id));
+
   return (
     <div className="bg-surface rounded-xl border border-border p-4">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold text-text-primary uppercase tracking-wide">
-          Members ({members.length})
+          Members ({visibleMembers.length})
         </h3>
         <button
           onClick={() => setShowInput(!showInput)}
@@ -53,11 +82,11 @@ export default function MemberManager({ members, onAdd, onRemove }: MemberManage
         </form>
       )}
 
-      {members.length === 0 ? (
+      {visibleMembers.length === 0 ? (
         <p className="text-text-secondary text-xs py-2">Add members to start splitting expenses</p>
       ) : (
         <div className="flex flex-wrap gap-2">
-          {members.map((m, i) => (
+          {visibleMembers.map((m, i) => (
             <div
               key={m.id}
               className="flex items-center gap-2 bg-surface-light rounded-full pl-1 pr-2 py-1 group"
@@ -70,10 +99,7 @@ export default function MemberManager({ members, onAdd, onRemove }: MemberManage
               </div>
               <span className="text-sm text-text-primary">{m.name}</span>
               <button
-                onClick={() => {
-                  const removed = onRemove(m.id);
-                  if (removed === false) alert(`Can't remove ${m.name} — they have expenses.`);
-                }}
+                onClick={() => handleRemove(m)}
                 className="p-0.5 rounded-full text-text-secondary hover:text-danger transition-colors opacity-0 group-hover:opacity-100"
               >
                 <X size={12} />
