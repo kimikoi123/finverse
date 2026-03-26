@@ -1,6 +1,6 @@
 import { CURRENCIES } from './currencies';
+import { loadRateCache, saveRateCache } from '../db/storage';
 
-const CACHE_KEY = 'splittrip-rates';
 const CACHE_DURATION = 60 * 60 * 1000; // 1 hour
 const API_URL = 'https://api.frankfurter.app/latest?from=USD';
 
@@ -12,25 +12,9 @@ function getHardcodedRates() {
   return rates;
 }
 
-function getCachedRates() {
-  try {
-    const raw = localStorage.getItem(CACHE_KEY);
-    if (!raw) return null;
-    const cached = JSON.parse(raw);
-    if (cached && cached.rates && cached.timestamp) return cached;
-  } catch {}
-  return null;
-}
-
-function cacheRates(rates, timestamp) {
-  try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify({ rates, timestamp }));
-  } catch {}
-}
-
 export async function fetchExchangeRates() {
   // Return fresh cache if available
-  const cached = getCachedRates();
+  const cached = await loadRateCache();
   if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
     return { rates: cached.rates, timestamp: cached.timestamp, source: 'cache' };
   }
@@ -48,7 +32,7 @@ export async function fetchExchangeRates() {
     const merged = { ...hardcoded, ...apiRates };
 
     const timestamp = Date.now();
-    cacheRates(merged, timestamp);
+    await saveRateCache(merged, timestamp);
     return { rates: merged, timestamp, source: 'api' };
   } catch {
     // If we have stale cache, prefer it over hardcoded

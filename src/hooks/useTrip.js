@@ -1,5 +1,7 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { generateId } from '../utils/helpers';
+import { loadState, saveState } from '../db/storage';
+import { migrateFromLocalStorage } from '../db/migrate';
 
 const INITIAL_STATE = {
   trips: [],
@@ -7,19 +9,35 @@ const INITIAL_STATE = {
 };
 
 export function useTrip() {
-  const [state, setState] = useState(() => {
-    try {
-      const saved = localStorage.getItem('splittrip-data');
-      if (saved) return JSON.parse(saved);
-    } catch {}
-    return INITIAL_STATE;
-  });
+  const [state, setState] = useState(INITIAL_STATE);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function init() {
+      const migrated = await migrateFromLocalStorage();
+      if (migrated && !cancelled) {
+        setState(migrated);
+        setLoading(false);
+        return;
+      }
+      const stored = await loadState();
+      if (!cancelled) {
+        if (stored.trips.length > 0 || stored.activeTripId) {
+          setState(stored);
+        }
+        setLoading(false);
+      }
+    }
+    init();
+    return () => { cancelled = true; };
+  }, []);
 
   const persist = useCallback((newState) => {
     setState(newState);
-    try {
-      localStorage.setItem('splittrip-data', JSON.stringify(newState));
-    } catch {}
+    saveState(newState).catch((err) => {
+      console.error('Failed to persist state to IndexedDB:', err);
+    });
   }, []);
 
   const activeTrip = state.trips.find((t) => t.id === state.activeTripId) || null;
@@ -133,6 +151,7 @@ export function useTrip() {
   }, [persist]);
 
   return {
+    loading,
     state,
     activeTrip,
     createTrip,
