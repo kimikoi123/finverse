@@ -14,7 +14,7 @@ interface TripListProps {
 export default function TripList({ trips, onSelect, onCreate, onDelete, showToast }: TripListProps) {
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState('');
-  const [currency, setCurrency] = useState('USD');
+  const [currency, setCurrency] = useState('PHP');
   const [pendingDeletes, setPendingDeletes] = useState<Set<string>>(new Set());
 
   const handleDelete = (trip: Trip) => {
