@@ -82,11 +82,11 @@ export default function Settlement({ expenses, members, baseCurrency, rates }: S
 
       {/* Settlement */}
       <div className="bg-surface rounded-xl border border-border p-4">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-text-primary uppercase tracking-wide">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+          <h3 className="text-sm font-semibold text-text-primary uppercase tracking-wide" data-heading>
             Who Pays Who
           </h3>
-          <div className="flex rounded-lg overflow-hidden border border-border">
+          <div className="flex rounded-lg overflow-hidden border border-border self-start sm:self-auto">
             <button
               onClick={() => setView('simplified')}
               className={`flex items-center gap-1 px-3 py-2 text-xs font-medium transition-colors ${
@@ -124,26 +124,33 @@ export default function Settlement({ expenses, members, baseCurrency, rates }: S
               return (
                 <div
                   key={i}
-                  className="flex items-center gap-3 bg-surface-light rounded-lg p-3"
+                  className="bg-surface-light rounded-lg p-3"
                 >
-                  <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"
-                    style={{ backgroundColor: getAvatarColor(getMemberIndex(debt.from)) }}
-                  >
-                    {getInitials(from.name)}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div
+                        className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"
+                        style={{ backgroundColor: getAvatarColor(getMemberIndex(debt.from)) }}
+                      >
+                        {getInitials(from.name)}
+                      </div>
+                      <span className="text-sm font-medium text-text-primary truncate">{from.name}</span>
+                    </div>
+                    <span className="text-sm font-semibold text-accent shrink-0 ml-2" style={{ fontVariantNumeric: 'tabular-nums' }}>
+                      {formatCurrency(debt.amount, baseCurrency)}
+                    </span>
                   </div>
-                  <span className="text-sm text-text-primary truncate">{from.name}</span>
-                  <ArrowRight size={16} className="text-text-secondary shrink-0" />
-                  <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"
-                    style={{ backgroundColor: getAvatarColor(getMemberIndex(debt.to)) }}
-                  >
-                    {getInitials(to.name)}
+                  <div className="flex items-center gap-2 mt-1.5 ml-4">
+                    <ArrowRight size={12} className="text-text-secondary shrink-0" />
+                    <span className="text-xs text-text-secondary">pays</span>
+                    <div
+                      className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold text-white shrink-0"
+                      style={{ backgroundColor: getAvatarColor(getMemberIndex(debt.to)) }}
+                    >
+                      {getInitials(to.name)}
+                    </div>
+                    <span className="text-xs text-text-primary truncate">{to.name}</span>
                   </div>
-                  <span className="text-sm text-text-primary truncate">{to.name}</span>
-                  <span className="text-sm font-semibold text-accent ml-auto shrink-0">
-                    {formatCurrency(debt.amount, baseCurrency)}
-                  </span>
                 </div>
               );
             })}

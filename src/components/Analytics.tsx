@@ -117,7 +117,7 @@ export default function Analytics({ trip, exchangeRates }: AnalyticsProps) {
             const sharePercent = categoryBreakdown.grandTotal > 0 ? (amount / categoryBreakdown.grandTotal) * 100 : 0;
 
             return (
-              <div key={category}>
+              <div key={category} className="hover:bg-surface-light/50 -mx-2 px-2 py-1.5 rounded-lg transition-colors">
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-2">
                     <div className={`w-7 h-7 rounded-md flex items-center justify-center shrink-0 ${textColor}`}>
@@ -126,14 +126,14 @@ export default function Analytics({ trip, exchangeRates }: AnalyticsProps) {
                     <span className="text-sm text-text-primary">{label}</span>
                     <span className="text-xs text-text-secondary">{sharePercent.toFixed(0)}%</span>
                   </div>
-                  <span className="text-sm font-medium text-text-primary">
+                  <span className="text-sm font-medium text-text-primary" style={{ fontVariantNumeric: 'tabular-nums' }}>
                     {formatCurrency(amount, baseCurrency)}
                   </span>
                 </div>
-                <div className="h-3 rounded-full bg-surface-light overflow-hidden">
+                <div className="h-2 rounded-full bg-surface-light overflow-hidden">
                   <div
-                    className={`h-3 rounded-full ${barColor} transition-all duration-500`}
-                    style={{ width: `${percentage}%` }}
+                    className={`h-2 rounded-full ${barColor} animate-bar-grow shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]`}
+                    style={{ '--target-width': `${percentage}%`, width: `${percentage}%` } as React.CSSProperties}
                   />
                 </div>
               </div>
@@ -153,17 +153,17 @@ export default function Analytics({ trip, exchangeRates }: AnalyticsProps) {
             const percentage = memberBreakdown.max > 0 ? (amount / memberBreakdown.max) * 100 : 0;
 
             return (
-              <div key={memberId}>
+              <div key={memberId} className="hover:bg-surface-light/50 -mx-2 px-2 py-1.5 rounded-lg transition-colors">
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-sm text-text-primary">{getMemberName(memberId)}</span>
-                  <span className="text-sm font-medium text-text-primary">
+                  <span className="text-sm font-medium text-text-primary" style={{ fontVariantNumeric: 'tabular-nums' }}>
                     {formatCurrency(amount, baseCurrency)}
                   </span>
                 </div>
-                <div className="h-3 rounded-full bg-surface-light overflow-hidden">
+                <div className="h-2 rounded-full bg-surface-light overflow-hidden">
                   <div
-                    className="h-3 rounded-full bg-primary transition-all duration-500"
-                    style={{ width: `${percentage}%` }}
+                    className="h-2 rounded-full bg-primary animate-bar-grow shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]"
+                    style={{ '--target-width': `${percentage}%`, width: `${percentage}%` } as React.CSSProperties}
                   />
                 </div>
               </div>
@@ -189,17 +189,17 @@ export default function Analytics({ trip, exchangeRates }: AnalyticsProps) {
               });
 
               return (
-                <div key={date}>
+                <div key={date} className="hover:bg-surface-light/50 -mx-2 px-2 py-1.5 rounded-lg transition-colors">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-sm text-text-primary">{formatted}</span>
-                    <span className="text-sm font-medium text-text-primary">
+                    <span className="text-sm font-medium text-text-primary" style={{ fontVariantNumeric: 'tabular-nums' }}>
                       {formatCurrency(amount, baseCurrency)}
                     </span>
                   </div>
-                  <div className="h-3 rounded-full bg-surface-light overflow-hidden">
+                  <div className="h-2 rounded-full bg-surface-light overflow-hidden">
                     <div
-                      className="h-3 rounded-full bg-accent transition-all duration-500"
-                      style={{ width: `${percentage}%` }}
+                      className="h-2 rounded-full bg-accent animate-bar-grow shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]"
+                      style={{ '--target-width': `${percentage}%`, width: `${percentage}%` } as React.CSSProperties}
                     />
                   </div>
                 </div>

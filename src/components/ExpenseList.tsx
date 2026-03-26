@@ -113,35 +113,38 @@ export default function ExpenseList({ expenses, members, onRemove, onEdit, showT
           )}
         </div>
 
-        <div className="flex gap-1.5 overflow-x-auto pb-1 -mb-1 scrollbar-hide">
-          <button
-            onClick={() => setSelectedCategory(null)}
-            className={`shrink-0 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
-              !selectedCategory
-                ? 'bg-primary text-white'
-                : 'bg-surface border border-border text-text-secondary hover:text-text-primary'
-            }`}
-          >
-            All
-          </button>
-          {Object.entries(CATEGORY_LABELS).map(([key, label]) => {
-            const Icon = CATEGORY_ICONS[key]!;
-            const isActive = selectedCategory === key;
-            return (
-              <button
-                key={key}
-                onClick={() => setSelectedCategory(isActive ? null : key)}
-                className={`shrink-0 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors flex items-center gap-1 ${
-                  isActive
-                    ? CATEGORY_COLORS[key]!
-                    : 'bg-surface border border-border text-text-secondary hover:text-text-primary'
-                }`}
-              >
-                <Icon size={11} />
-                {label}
-              </button>
-            );
-          })}
+        <div className="relative">
+          <div className="flex gap-1.5 overflow-x-auto pb-1 -mb-1 scrollbar-hide">
+            <button
+              onClick={() => setSelectedCategory(null)}
+              className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                !selectedCategory
+                  ? 'bg-primary text-white'
+                  : 'bg-surface border border-border text-text-secondary hover:text-text-primary'
+              }`}
+            >
+              All
+            </button>
+            {Object.entries(CATEGORY_LABELS).map(([key, label]) => {
+              const Icon = CATEGORY_ICONS[key]!;
+              const isActive = selectedCategory === key;
+              return (
+                <button
+                  key={key}
+                  onClick={() => setSelectedCategory(isActive ? null : key)}
+                  className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1 ${
+                    isActive
+                      ? CATEGORY_COLORS[key]!
+                      : 'bg-surface border border-border text-text-secondary hover:text-text-primary'
+                  }`}
+                >
+                  <Icon size={12} />
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+          <div className="absolute right-0 top-0 bottom-1 w-6 bg-gradient-to-l from-[#13131f] to-transparent pointer-events-none sm:hidden" />
         </div>
       </div>
 
@@ -186,28 +189,28 @@ export default function ExpenseList({ expenses, members, onRemove, onEdit, showT
                     </p>
                   </div>
                   <div className="flex items-center justify-between mt-0.5">
-                    <p className="text-xs text-text-secondary truncate">
-                      <Calendar size={11} className="inline -mt-0.5 mr-0.5" />
-                      {new Date(expense.date || expense.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                      {' · '}
-                      Paid by <span className="text-primary-light">{getMemberName(expense.paidBy)}</span>
-                      {' · '}
-                      {expense.splitType === 'equal' ? 'Equal' : 'Custom'} split
-                      {' · '}
-                      {expense.participants.length} people
-                    </p>
-                    <div className="flex items-center shrink-0 sm:opacity-0 sm:group-hover:opacity-100">
+                    <div className="flex flex-wrap gap-x-1.5 gap-y-0.5 text-xs text-text-secondary min-w-0">
+                      <span className="flex items-center gap-0.5 shrink-0">
+                        <Calendar size={11} className="-mt-0.5" />
+                        {new Date(expense.date || expense.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                      </span>
+                      <span className="shrink-0">·</span>
+                      <span className="shrink-0">Paid by <span className="text-primary-light">{getMemberName(expense.paidBy)}</span></span>
+                      <span className="shrink-0">·</span>
+                      <span className="shrink-0">{expense.splitType === 'equal' ? 'Equal' : 'Custom'} · {expense.participants.length} people</span>
+                    </div>
+                    <div className="flex items-center shrink-0 gap-0 sm:opacity-0 sm:group-hover:opacity-100">
                       <button
                         onClick={() => onEdit(expense)}
                         aria-label={`Edit expense: ${expense.description}`}
-                        className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded text-text-secondary hover:text-primary transition-colors"
+                        className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded text-text-secondary hover:text-primary transition-colors"
                       >
                         <Pencil size={14} />
                       </button>
                       <button
                         onClick={() => handleRemove(expense)}
                         aria-label={`Delete expense: ${expense.description}`}
-                        className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded text-text-secondary hover:text-danger transition-colors"
+                        className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded text-text-secondary hover:text-danger transition-colors"
                       >
                         <Trash2 size={14} />
                       </button>

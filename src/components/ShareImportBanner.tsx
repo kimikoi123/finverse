@@ -18,7 +18,7 @@ export default function ShareImportBanner({
   return (
     <div className="max-w-2xl mx-auto w-full px-4 sm:px-6 pt-4">
       <div
-        className="bg-surface border border-primary/30 rounded-xl p-4"
+        className="bg-surface border border-primary/30 rounded-xl p-4 animate-slide-up"
         role="alert"
       >
         <div className="flex items-start gap-3">

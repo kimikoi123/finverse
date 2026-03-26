@@ -17,7 +17,7 @@ export default function InlineAlert({ message, onDismiss, autoDismissMs }: Inlin
   if (!message) return null;
 
   return (
-    <div className="flex items-center gap-2 bg-danger/10 border border-danger/30 text-danger rounded-lg px-3 py-2.5 text-sm">
+    <div className="flex items-center gap-2 bg-danger/10 border border-danger/30 text-danger rounded-lg px-3 py-2.5 text-sm animate-scale-in">
       <AlertCircle size={16} className="shrink-0" />
       <span className="flex-1">{message}</span>
       <button
