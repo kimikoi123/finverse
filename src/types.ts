@@ -21,6 +21,7 @@ export interface Expense {
   participants: string[];
   customAmounts: Record<string, number>;
   category: string;
+  date?: string;
   createdAt: string;
 }
 

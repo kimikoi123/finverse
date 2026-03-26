@@ -19,6 +19,7 @@ export default function ExpenseForm({ members, baseCurrency, onAdd, onCancel }: 
   const [participants, setParticipants] = useState(members.map((m) => m.id));
   const [customAmounts, setCustomAmounts] = useState<Record<string, number>>({});
   const [category, setCategory] = useState('general');
+  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
 
   const CATEGORIES = [
     { value: 'food', label: 'Food & Drinks' },
@@ -47,6 +48,7 @@ export default function ExpenseForm({ members, baseCurrency, onAdd, onCancel }: 
       splitType,
       participants,
       category,
+      date,
       customAmounts: splitType === 'custom' ? customAmounts : {},
     };
 
@@ -121,6 +123,13 @@ export default function ExpenseForm({ members, baseCurrency, onAdd, onCancel }: 
             </option>
           ))}
         </select>
+
+        <input
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          className="sm:col-span-2 bg-surface-light border border-border rounded-lg px-3 py-2.5 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
+        />
       </div>
 
       <div>
