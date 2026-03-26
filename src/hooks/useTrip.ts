@@ -1,6 +1,8 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { generateId } from '../utils/helpers';
 import type { Trip, TripState, Member, Expense } from '../types';
+import { loadState, saveState } from '../db/storage';
+import { migrateFromLocalStorage } from '../db/migrate';
 
 const INITIAL_STATE: TripState = {
   trips: [],
@@ -8,24 +10,35 @@ const INITIAL_STATE: TripState = {
 };
 
 export function useTrip() {
-  const [state, setState] = useState<TripState>(() => {
-    try {
-      const saved = localStorage.getItem('splittrip-data');
-      if (saved) {
-        const parsed = JSON.parse(saved) as unknown;
-        if (parsed && typeof parsed === 'object' && 'trips' in parsed) {
-          return parsed as TripState;
-        }
+  const [state, setState] = useState<TripState>(INITIAL_STATE);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function init() {
+      const migrated = await migrateFromLocalStorage();
+      if (migrated && !cancelled) {
+        setState(migrated);
+        setLoading(false);
+        return;
       }
-    } catch { /* ignore */ }
-    return INITIAL_STATE;
-  });
+      const stored = await loadState();
+      if (!cancelled) {
+        if (stored.trips.length > 0 || stored.activeTripId) {
+          setState(stored);
+        }
+        setLoading(false);
+      }
+    }
+    init();
+    return () => { cancelled = true; };
+  }, []);
 
   const persist = useCallback((newState: TripState) => {
     setState(newState);
-    try {
-      localStorage.setItem('splittrip-data', JSON.stringify(newState));
-    } catch { /* ignore */ }
+    saveState(newState).catch((err: unknown) => {
+      console.error('Failed to persist state to IndexedDB:', err);
+    });
   }, []);
 
   const activeTrip = state.trips.find((t) => t.id === state.activeTripId) ?? null;
@@ -139,6 +152,7 @@ export function useTrip() {
   }, [persist]);
 
   return {
+    loading,
     state,
     activeTrip,
     createTrip,

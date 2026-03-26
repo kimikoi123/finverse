@@ -8,6 +8,7 @@ import ToastContainer from './components/Toast';
 
 function App() {
   const {
+    loading,
     state,
     activeTrip,
     createTrip,
@@ -25,6 +26,14 @@ function App() {
 
   const exchangeRates = useExchangeRates();
   const { toasts, showToast, undoToast, dismissToast, duration } = useToast();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#13131f] flex items-center justify-center">
+        <div className="text-gray-400 text-sm">Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#13131f]" style={{ paddingLeft: 'env(safe-area-inset-left, 0px)', paddingRight: 'env(safe-area-inset-right, 0px)' }}>
