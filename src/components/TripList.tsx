@@ -65,6 +65,7 @@ export default function TripList({ trips, onSelect, onCreate, onDelete, showToas
             placeholder="Trip name (e.g. Bali 2026)"
             value={name}
             onChange={(e) => setName(e.target.value)}
+            aria-label="Trip name"
             className="w-full bg-surface-light border border-border rounded-lg px-3 py-2.5 text-text-primary placeholder:text-text-secondary/50 focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm"
             autoFocus
           />
@@ -72,6 +73,7 @@ export default function TripList({ trips, onSelect, onCreate, onDelete, showToas
             <select
               value={currency}
               onChange={(e) => setCurrency(e.target.value)}
+              aria-label="Base currency"
               className="flex-1 bg-surface-light border border-border rounded-lg px-3 py-2.5 text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm"
             >
               {Object.entries(CURRENCIES).map(([code, c]) => (
@@ -128,6 +130,7 @@ export default function TripList({ trips, onSelect, onCreate, onDelete, showToas
                       e.stopPropagation();
                       handleDelete(trip);
                     }}
+                    aria-label={`Delete trip: ${trip.name}`}
                     className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-text-secondary hover:text-danger hover:bg-danger/10 transition-colors sm:opacity-0 sm:group-hover:opacity-100"
                   >
                     <Trash2 size={16} />

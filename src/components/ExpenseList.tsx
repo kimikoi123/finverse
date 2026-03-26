@@ -99,11 +99,13 @@ export default function ExpenseList({ expenses, members, onRemove, onEdit, showT
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search expenses..."
+            aria-label="Search expenses"
             className="w-full pl-8 pr-8 py-2 bg-surface border border-border rounded-xl text-sm text-text-primary placeholder:text-text-secondary focus:outline-none focus:border-primary/50 transition-colors"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
+              aria-label="Clear search"
               className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-text-secondary hover:text-text-primary transition-colors"
             >
               <X size={14} />
@@ -197,12 +199,14 @@ export default function ExpenseList({ expenses, members, onRemove, onEdit, showT
                     <div className="flex items-center shrink-0 sm:opacity-0 sm:group-hover:opacity-100">
                       <button
                         onClick={() => onEdit(expense)}
+                        aria-label={`Edit expense: ${expense.description}`}
                         className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded text-text-secondary hover:text-primary transition-colors"
                       >
                         <Pencil size={14} />
                       </button>
                       <button
                         onClick={() => handleRemove(expense)}
+                        aria-label={`Delete expense: ${expense.description}`}
                         className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded text-text-secondary hover:text-danger transition-colors"
                       >
                         <Trash2 size={14} />

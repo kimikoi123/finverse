@@ -34,6 +34,7 @@ export default function Header({ activeTrip, onBack, onExport, onImport }: Heade
           {activeTrip ? (
             <button
               onClick={onBack}
+              aria-label="Go back to trip list"
               className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-surface-light transition-colors text-text-secondary hover:text-text-primary"
             >
               <ArrowLeft size={20} />
@@ -55,6 +56,7 @@ export default function Header({ activeTrip, onBack, onExport, onImport }: Heade
         <div className="flex items-center gap-1">
           <button
             onClick={onExport}
+            aria-label="Export data"
             className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-surface-light transition-colors text-text-secondary hover:text-text-primary"
             title="Export data"
           >
@@ -62,6 +64,7 @@ export default function Header({ activeTrip, onBack, onExport, onImport }: Heade
           </button>
           <button
             onClick={() => fileRef.current?.click()}
+            aria-label="Import data"
             className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-surface-light transition-colors text-text-secondary hover:text-text-primary"
             title="Import data"
           >
@@ -72,6 +75,7 @@ export default function Header({ activeTrip, onBack, onExport, onImport }: Heade
             type="file"
             accept=".json"
             onChange={handleImport}
+            aria-label="Import backup file"
             className="hidden"
           />
         </div>

@@ -87,6 +87,7 @@ export default function ExpenseForm({ members, baseCurrency, onAdd, onCancel, ed
         <button
           type="button"
           onClick={onCancel}
+          aria-label="Cancel expense form"
           className="p-1.5 rounded-lg hover:bg-surface-light transition-colors text-text-secondary"
         >
           <X size={16} />
@@ -99,6 +100,7 @@ export default function ExpenseForm({ members, baseCurrency, onAdd, onCancel, ed
           placeholder="What was it for?"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
+          aria-label="Expense description"
           className="sm:col-span-2 bg-surface-light border border-border rounded-lg px-3 py-2.5 text-sm text-text-primary placeholder:text-text-secondary/50 focus:outline-none focus:ring-2 focus:ring-primary/50"
           autoFocus
         />
@@ -107,6 +109,7 @@ export default function ExpenseForm({ members, baseCurrency, onAdd, onCancel, ed
           <select
             value={currency}
             onChange={(e) => setCurrency(e.target.value)}
+            aria-label="Currency"
             className="w-24 bg-surface-light border border-border rounded-lg px-2 py-2.5 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
           >
             {Object.entries(CURRENCIES).map(([code, c]) => (
@@ -122,6 +125,7 @@ export default function ExpenseForm({ members, baseCurrency, onAdd, onCancel, ed
             placeholder="Amount"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
+            aria-label="Expense amount"
             className="flex-1 bg-surface-light border border-border rounded-lg px-3 py-2.5 text-sm text-text-primary placeholder:text-text-secondary/50 focus:outline-none focus:ring-2 focus:ring-primary/50"
           />
         </div>
@@ -129,6 +133,7 @@ export default function ExpenseForm({ members, baseCurrency, onAdd, onCancel, ed
         <select
           value={category}
           onChange={(e) => setCategory(e.target.value)}
+          aria-label="Expense category"
           className="bg-surface-light border border-border rounded-lg px-3 py-2.5 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
         >
           {CATEGORIES.map((c) => (
@@ -142,6 +147,7 @@ export default function ExpenseForm({ members, baseCurrency, onAdd, onCancel, ed
           type="date"
           value={date}
           onChange={(e) => setDate(e.target.value)}
+          aria-label="Expense date"
           className="sm:col-span-2 bg-surface-light border border-border rounded-lg px-3 py-2.5 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
         />
       </div>
@@ -227,6 +233,7 @@ export default function ExpenseForm({ members, baseCurrency, onAdd, onCancel, ed
                       [m.id]: parseFloat(e.target.value) || 0,
                     }))
                   }
+                  aria-label={`Custom amount for ${m.name}`}
                   className="flex-1 bg-surface-light border border-border rounded-lg px-3 py-2 text-sm text-text-primary placeholder:text-text-secondary/50 focus:outline-none focus:ring-2 focus:ring-primary/50"
                 />
               </div>

@@ -60,6 +60,7 @@ export default function MemberManager({ members, expenses, onAdd, onRemove, show
         </h3>
         <button
           onClick={() => setShowInput(!showInput)}
+          aria-label={showInput ? 'Cancel adding member' : 'Add new member'}
           className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-surface-light transition-colors text-primary"
         >
           <UserPlus size={18} />
@@ -73,11 +74,13 @@ export default function MemberManager({ members, expenses, onAdd, onRemove, show
             placeholder="Name"
             value={name}
             onChange={(e) => setName(e.target.value)}
+            aria-label="New member name"
             className="flex-1 bg-surface-light border border-border rounded-lg px-3 py-2 text-sm text-text-primary placeholder:text-text-secondary/50 focus:outline-none focus:ring-2 focus:ring-primary/50"
             autoFocus
           />
           <button
             type="submit"
+            aria-label="Add member"
             className="px-3 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors text-sm"
           >
             <Plus size={16} />
@@ -103,6 +106,7 @@ export default function MemberManager({ members, expenses, onAdd, onRemove, show
               <span className="text-sm text-text-primary">{m.name}</span>
               <button
                 onClick={() => handleRemove(m)}
+                aria-label={`Remove member: ${m.name}`}
                 className="p-1.5 -mr-1 rounded-full text-text-secondary hover:text-danger transition-colors sm:opacity-0 sm:group-hover:opacity-100"
               >
                 <X size={14} />

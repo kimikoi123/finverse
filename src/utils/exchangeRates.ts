@@ -5,11 +5,6 @@ import { loadRateCache, saveRateCache } from '../db/storage';
 const CACHE_DURATION = 60 * 60 * 1000; // 1 hour
 const API_URL = 'https://api.frankfurter.app/latest?from=USD';
 
-interface CachedRates {
-  rates: ExchangeRates;
-  timestamp: number;
-}
-
 function getHardcodedRates(): ExchangeRates {
   const rates: ExchangeRates = {};
   for (const [code, curr] of Object.entries(CURRENCIES)) {

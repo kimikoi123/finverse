@@ -17,13 +17,13 @@ describe('convertToBase', () => {
 
   it('falls back to CURRENCIES when rates is null', () => {
     const result = convertToBase(100, 'EUR', 'USD', null);
-    const expected = (100 / CURRENCIES.EUR.rate) * CURRENCIES.USD.rate;
+    const expected = (100 / CURRENCIES.EUR!.rate) * CURRENCIES.USD!.rate;
     expect(result).toBeCloseTo(expected, 2);
   });
 
   it('falls back to CURRENCIES when rates is undefined', () => {
-    const result = convertToBase(100, 'EUR', 'USD', undefined);
-    const expected = (100 / CURRENCIES.EUR.rate) * CURRENCIES.USD.rate;
+    const result = convertToBase(100, 'EUR', 'USD', undefined as unknown as null);
+    const expected = (100 / CURRENCIES.EUR!.rate) * CURRENCIES.USD!.rate;
     expect(result).toBeCloseTo(expected, 2);
   });
 

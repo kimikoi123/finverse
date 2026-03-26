@@ -52,6 +52,7 @@ function ToastItem({
         </button>
         <button
           onClick={() => onDismiss(toast.id)}
+          aria-label="Dismiss notification"
           className="p-1 text-text-secondary hover:text-text-primary transition-colors"
         >
           <X size={14} />
@@ -71,7 +72,7 @@ export default function ToastContainer({ toasts, duration, onUndo, onDismiss }: 
   if (toasts.length === 0) return null;
 
   return (
-    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 w-full max-w-sm px-4">
+    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 w-full max-w-sm px-4" aria-live="polite" role="status">
       {toasts.map((toast) => (
         <ToastItem
           key={toast.id}

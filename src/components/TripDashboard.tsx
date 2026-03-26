@@ -1,11 +1,14 @@
 import { useState } from 'react';
-import { Plus, Receipt, Scale, Users as UsersIcon, RefreshCw, Wifi, WifiOff } from 'lucide-react';
+import { Plus, Receipt, Scale, Users as UsersIcon, BarChart3, RefreshCw, Wifi, WifiOff, Share2 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import MemberManager from './MemberManager';
 import ExpenseForm from './ExpenseForm';
 import ExpenseList from './ExpenseList';
 import Settlement from './Settlement';
+import Analytics from './Analytics';
+import ShareDialog from './ShareDialog';
 import { CURRENCIES, convertToBase } from '../utils/currencies';
+import { generateShareUrl } from '../utils/sharing';
 import type { Trip, Member, Expense, ExchangeRates, RateSource } from '../types';
 
 interface ExchangeRateState {
@@ -36,6 +39,7 @@ interface Tab {
 
 const TABS: Tab[] = [
   { id: 'expenses', label: 'Expenses', icon: Receipt },
+  { id: 'analytics', label: 'Analytics', icon: BarChart3 },
   { id: 'settle', label: 'Settle Up', icon: Scale },
   { id: 'members', label: 'Members', icon: UsersIcon },
 ];
@@ -53,6 +57,8 @@ export default function TripDashboard({
   const [activeTab, setActiveTab] = useState('expenses');
   const [showExpenseForm, setShowExpenseForm] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const [showShareDialog, setShowShareDialog] = useState(false);
+  const [shareUrl, setShareUrl] = useState('');
 
   const handleAddExpense = (expense: Omit<Expense, 'id' | 'createdAt'>) => {
     onAddExpense(expense);
@@ -75,8 +81,25 @@ export default function TripDashboard({
     setShowExpenseForm(false);
   };
 
+  const handleShare = () => {
+    const url = generateShareUrl(trip);
+    setShareUrl(url);
+    setShowShareDialog(true);
+  };
+
   return (
     <div className="max-w-2xl mx-auto w-full p-4 sm:p-6" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1rem)' }}>
+      {/* Share Button */}
+      <div className="flex justify-end mb-3">
+        <button
+          onClick={handleShare}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-surface-light border border-border transition-colors"
+        >
+          <Share2 size={14} />
+          Share Trip
+        </button>
+      </div>
+
       {/* Quick Stats */}
       <div className="grid grid-cols-3 gap-3 mb-4">
         <div className="bg-surface rounded-xl border border-border p-3 text-center">
@@ -114,6 +137,7 @@ export default function TripDashboard({
         {exchangeRates.source !== 'api' && (
           <button
             onClick={exchangeRates.refresh}
+            aria-label="Refresh exchange rates"
             className="text-text-secondary hover:text-text-primary transition-colors"
             title="Refresh rates"
           >
@@ -123,15 +147,20 @@ export default function TripDashboard({
       </div>
 
       {/* Tabs */}
-      <div className="flex bg-surface rounded-xl border border-border p-1 mb-4">
+      <div className="flex bg-surface rounded-xl border border-border p-1 mb-4" role="tablist" aria-label="Trip sections">
         {TABS.map((tab) => {
           const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
           return (
             <button
               key={tab.id}
+              role="tab"
+              aria-selected={isActive}
+              id={`tab-${tab.id}`}
+              aria-controls={`tabpanel-${tab.id}`}
               onClick={() => setActiveTab(tab.id)}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                activeTab === tab.id
+                isActive
                   ? 'bg-primary text-white'
                   : 'text-text-secondary hover:text-text-primary'
               }`}
@@ -145,7 +174,7 @@ export default function TripDashboard({
 
       {/* Tab Content */}
       {activeTab === 'expenses' && (
-        <div className="space-y-4">
+        <div id="tabpanel-expenses" role="tabpanel" aria-labelledby="tab-expenses" className="space-y-4">
           {trip.members.length >= 2 && !showExpenseForm && (
             <button
               onClick={() => setShowExpenseForm(true)}
@@ -192,22 +221,39 @@ export default function TripDashboard({
         </div>
       )}
 
+      {activeTab === 'analytics' && (
+        <div id="tabpanel-analytics" role="tabpanel" aria-labelledby="tab-analytics">
+          <Analytics trip={trip} exchangeRates={exchangeRates.rates} />
+        </div>
+      )}
+
       {activeTab === 'settle' && (
+        <div id="tabpanel-settle" role="tabpanel" aria-labelledby="tab-settle">
         <Settlement
           expenses={trip.expenses}
           members={trip.members}
           baseCurrency={trip.baseCurrency}
           rates={exchangeRates.rates}
         />
+        </div>
       )}
 
       {activeTab === 'members' && (
+        <div id="tabpanel-members" role="tabpanel" aria-labelledby="tab-members">
         <MemberManager
           members={trip.members}
           expenses={trip.expenses}
           onAdd={onAddMember}
           onRemove={onRemoveMember}
           showToast={showToast}
+        />
+        </div>
+      )}
+
+      {showShareDialog && (
+        <ShareDialog
+          shareUrl={shareUrl}
+          onClose={() => setShowShareDialog(false)}
         />
       )}
     </div>

@@ -1,11 +1,12 @@
 import { saveState, saveRateCache } from './storage';
+import type { TripState } from '../types';
 
-export async function migrateFromLocalStorage() {
+export async function migrateFromLocalStorage(): Promise<TripState | null> {
   try {
     const raw = localStorage.getItem('splittrip-data');
     if (!raw) return null;
 
-    const data = JSON.parse(raw);
+    const data: TripState = JSON.parse(raw);
     if (!data.trips || !Array.isArray(data.trips)) return null;
 
     await saveState(data);

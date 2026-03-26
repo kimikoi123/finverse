@@ -126,6 +126,21 @@ export function useTrip() {
     updateTrip(activeTrip.id, { expenses: newExpenses });
   }, [activeTrip, updateTrip]);
 
+  // Import a shared trip (creates a new trip with fresh ID to avoid conflicts)
+  const importSharedTrip = useCallback((sharedTrip: Trip): Trip => {
+    const trip: Trip = {
+      ...sharedTrip,
+      id: generateId(),
+      createdAt: new Date().toISOString(),
+    };
+    const newState: TripState = {
+      trips: [...state.trips, trip],
+      activeTripId: trip.id,
+    };
+    persist(newState);
+    return trip;
+  }, [state, persist]);
+
   // Export/Import
   const exportData = useCallback(() => {
     const data = JSON.stringify(state, null, 2);
@@ -166,5 +181,6 @@ export function useTrip() {
     editExpense,
     exportData,
     importData,
+    importSharedTrip,
   };
 }

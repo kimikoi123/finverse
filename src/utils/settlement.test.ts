@@ -1,33 +1,34 @@
 import { describe, it, expect } from 'vitest';
 import { calculateBalances, calculateSimplifiedDebts, calculateFullDebts } from './settlement';
+import type { Member, Expense, Balances, Debt, SplitType } from '../types';
 
-function makeMember(id, name) {
+function makeMember(id: string, name?: string): Member {
   return { id, name: name || id };
 }
 
 function makeExpense({
   id = 'exp-1',
   description = 'Test',
-  amount,
+  amount = 0,
   currency = 'USD',
-  paidBy,
-  splitType = 'equal',
-  participants,
-  customAmounts = {},
+  paidBy = '',
+  splitType = 'equal' as SplitType,
+  participants = [] as string[],
+  customAmounts = {} as Record<string, number>,
   category = 'food',
-} = {}) {
+} = {}): Expense {
   return { id, description, amount, currency, paidBy, splitType, participants, customAmounts, category, createdAt: new Date().toISOString() };
 }
 
 // Invariant: sum of all balances must equal 0
-function expectBalancesSum(balances) {
+function expectBalancesSum(balances: Balances): void {
   const sum = Object.values(balances).reduce((s, v) => s + v, 0);
   expect(sum).toBeCloseTo(0, 10);
 }
 
 // Verify debts fully settle all balances
-function expectDebtsSettleBalances(debts, originalBalances) {
-  const settled = { ...originalBalances };
+function expectDebtsSettleBalances(debts: Debt[], originalBalances: Balances): void {
+  const settled: Balances = { ...originalBalances };
   debts.forEach(({ from, to, amount }) => {
     settled[from] = (settled[from] || 0) + amount;
     settled[to] = (settled[to] || 0) - amount;
@@ -150,9 +151,9 @@ describe('calculateSimplifiedDebts', () => {
   it('two people: { A: 50, B: -50 } -> single debt B->A for 50', () => {
     const debts = calculateSimplifiedDebts({ A: 50, B: -50 });
     expect(debts).toHaveLength(1);
-    expect(debts[0].from).toBe('B');
-    expect(debts[0].to).toBe('A');
-    expect(debts[0].amount).toBeCloseTo(50, 2);
+    expect(debts[0]!.from).toBe('B');
+    expect(debts[0]!.to).toBe('A');
+    expect(debts[0]!.amount).toBeCloseTo(50, 2);
   });
 
   it('three people, 1 creditor 2 debtors: { A: 100, B: -60, C: -40 }', () => {
@@ -199,7 +200,7 @@ describe('calculateFullDebts', () => {
     expect(debts.length).toBeGreaterThanOrEqual(1);
     const debt = debts.find(d => d.from === 'B' && d.to === 'A');
     expect(debt).toBeDefined();
-    expect(debt.amount).toBeGreaterThan(0);
+    expect(debt!.amount).toBeGreaterThan(0);
   });
 
   it('all balanced: { A: 0, B: 0 } -> empty array', () => {
