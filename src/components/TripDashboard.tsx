@@ -101,23 +101,23 @@ export default function TripDashboard({
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-3 gap-3 mb-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
         <div className="bg-surface rounded-xl border border-border p-3 text-center">
           <p className="text-lg font-bold text-text-primary">{trip.members.length}</p>
-          <p className="text-[10px] text-text-secondary uppercase tracking-wide">Members</p>
+          <p className="text-[10px] text-text-secondary uppercase tracking-wide" data-heading>Members</p>
         </div>
         <div className="bg-surface rounded-xl border border-border p-3 text-center">
           <p className="text-lg font-bold text-text-primary">{trip.expenses.length}</p>
-          <p className="text-[10px] text-text-secondary uppercase tracking-wide">Expenses</p>
+          <p className="text-[10px] text-text-secondary uppercase tracking-wide" data-heading>Expenses</p>
         </div>
-        <div className="bg-surface rounded-xl border border-border p-3 text-center">
-          <p className="text-lg font-bold text-accent">
+        <div className="col-span-2 sm:col-span-1 bg-gradient-to-r from-primary/10 to-accent/10 rounded-xl border border-primary/20 p-3 text-center">
+          <p className="text-base sm:text-lg font-bold text-accent" style={{ fontVariantNumeric: 'tabular-nums' }}>
             {CURRENCIES[trip.baseCurrency]?.symbol}
             {trip.expenses
               .reduce((sum, e) => convertToBase(e.amount, e.currency, trip.baseCurrency, exchangeRates.rates) + sum, 0)
               .toFixed(2)}
           </p>
-          <p className="text-[10px] text-text-secondary uppercase tracking-wide">Total ({trip.baseCurrency})</p>
+          <p className="text-[10px] text-text-secondary uppercase tracking-wide" data-heading>Total ({trip.baseCurrency})</p>
         </div>
       </div>
 
@@ -156,17 +156,21 @@ export default function TripDashboard({
               key={tab.id}
               role="tab"
               aria-selected={isActive}
+              aria-label={tab.label}
               id={`tab-${tab.id}`}
               aria-controls={`tabpanel-${tab.id}`}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+              className={`flex-1 flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 py-2.5 rounded-lg text-sm font-medium transition-colors relative ${
                 isActive
                   ? 'bg-primary text-white'
                   : 'text-text-secondary hover:text-text-primary'
               }`}
             >
-              <Icon size={14} />
-              {tab.label}
+              <Icon size={16} />
+              <span className="hidden sm:inline">{tab.label}</span>
+              {isActive && (
+                <span className="sm:hidden absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-white" />
+              )}
             </button>
           );
         })}
@@ -174,7 +178,7 @@ export default function TripDashboard({
 
       {/* Tab Content */}
       {activeTab === 'expenses' && (
-        <div id="tabpanel-expenses" role="tabpanel" aria-labelledby="tab-expenses" className="space-y-4">
+        <div id="tabpanel-expenses" role="tabpanel" aria-labelledby="tab-expenses" className="space-y-4 animate-fade-in">
           {trip.members.length >= 2 && !showExpenseForm && (
             <button
               onClick={() => setShowExpenseForm(true)}
@@ -222,13 +226,13 @@ export default function TripDashboard({
       )}
 
       {activeTab === 'analytics' && (
-        <div id="tabpanel-analytics" role="tabpanel" aria-labelledby="tab-analytics">
+        <div id="tabpanel-analytics" role="tabpanel" aria-labelledby="tab-analytics" className="animate-fade-in">
           <Analytics trip={trip} exchangeRates={exchangeRates.rates} />
         </div>
       )}
 
       {activeTab === 'settle' && (
-        <div id="tabpanel-settle" role="tabpanel" aria-labelledby="tab-settle">
+        <div id="tabpanel-settle" role="tabpanel" aria-labelledby="tab-settle" className="animate-fade-in">
         <Settlement
           expenses={trip.expenses}
           members={trip.members}
@@ -239,7 +243,7 @@ export default function TripDashboard({
       )}
 
       {activeTab === 'members' && (
-        <div id="tabpanel-members" role="tabpanel" aria-labelledby="tab-members">
+        <div id="tabpanel-members" role="tabpanel" aria-labelledby="tab-members" className="animate-fade-in">
         <MemberManager
           members={trip.members}
           expenses={trip.expenses}

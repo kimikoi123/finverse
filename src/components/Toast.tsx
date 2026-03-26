@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import { X, Undo2 } from 'lucide-react';
 import type { Toast as ToastData } from '../hooks/useToast';
 
@@ -20,27 +19,8 @@ function ToastItem({
   onUndo: (id: string) => void;
   onDismiss: (id: string) => void;
 }) {
-  const [progress, setProgress] = useState(100);
-
-  useEffect(() => {
-    const start = toast.createdAt;
-    let raf: number;
-
-    const tick = () => {
-      const elapsed = Date.now() - start;
-      const remaining = Math.max(0, 100 - (elapsed / duration) * 100);
-      setProgress(remaining);
-      if (remaining > 0) {
-        raf = requestAnimationFrame(tick);
-      }
-    };
-
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [toast.createdAt, duration]);
-
   return (
-    <div className="bg-surface border border-border rounded-xl shadow-lg shadow-black/30 overflow-hidden animate-slide-up">
+    <div className="glass ring-1 ring-white/5 rounded-xl shadow-lg shadow-black/30 overflow-hidden animate-slide-up">
       <div className="flex items-center gap-3 px-4 py-3">
         <p className="text-sm text-text-primary flex-1">{toast.message}</p>
         <button
@@ -60,8 +40,10 @@ function ToastItem({
       </div>
       <div className="h-0.5 bg-surface-light">
         <div
-          className="h-full bg-primary transition-none"
-          style={{ width: `${progress}%` }}
+          className="h-full bg-primary"
+          style={{
+            animation: `progress-shrink ${duration}ms linear forwards`,
+          }}
         />
       </div>
     </div>

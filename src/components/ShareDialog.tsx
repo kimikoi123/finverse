@@ -34,7 +34,7 @@ export default function ShareDialog({ shareUrl, onClose }: ShareDialogProps) {
 
       {/* Dialog */}
       <div
-        className="relative bg-surface border border-border rounded-2xl p-5 w-full max-w-md shadow-xl"
+        className="relative bg-surface border border-border rounded-2xl p-5 w-full max-w-md shadow-xl animate-scale-in"
         role="dialog"
         aria-modal="true"
         aria-labelledby="share-dialog-title"
@@ -61,18 +61,18 @@ export default function ShareDialog({ shareUrl, onClose }: ShareDialogProps) {
         </p>
 
         {/* URL Input + Copy Button */}
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <input
             id="share-url-input"
             type="text"
             readOnly
             value={shareUrl}
-            className="flex-1 bg-[#13131f] border border-border rounded-lg px-3 py-2.5 text-sm text-text-primary truncate focus:outline-none focus:ring-1 focus:ring-primary"
+            className="w-full sm:flex-1 bg-[#13131f] border border-border rounded-lg px-3 py-2.5 text-sm text-text-primary truncate focus:outline-none focus:ring-1 focus:ring-primary"
             onClick={(e) => (e.target as HTMLInputElement).select()}
           />
           <button
             onClick={handleCopy}
-            className={`flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+            className={`w-full sm:w-auto flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
               copied
                 ? 'bg-success/20 text-success'
                 : 'bg-primary text-white hover:bg-primary/80'

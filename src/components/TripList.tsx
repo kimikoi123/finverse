@@ -93,18 +93,19 @@ export default function TripList({ trips, onSelect, onCreate, onDelete, showToas
       )}
 
       {trips.length === 0 ? (
-        <div className="text-center py-16">
-          <div className="w-16 h-16 rounded-full bg-surface-light flex items-center justify-center mx-auto mb-4">
-            <Receipt size={28} className="text-text-secondary" />
+        <div className="text-center py-16 animate-fade-in">
+          <div className="w-20 h-20 rounded-full border-2 border-dashed border-border flex items-center justify-center mx-auto mb-4">
+            <Receipt size={32} className="text-text-secondary" />
           </div>
-          <p className="text-text-secondary text-sm">No trips yet. Create one to get started!</p>
+          <p className="text-text-primary text-sm font-medium mb-1">Ready to split some bills?</p>
+          <p className="text-text-secondary text-xs">Create your first trip to get started</p>
         </div>
       ) : (
         <div className="space-y-2">
           {trips.filter((t) => !pendingDeletes.has(t.id)).map((trip) => (
             <div
               key={trip.id}
-              className="bg-surface rounded-xl border border-border hover:border-primary/40 transition-colors cursor-pointer group"
+              className="bg-surface rounded-xl border border-border hover:border-primary/40 hover:border-l-2 hover:border-l-primary transition-colors cursor-pointer group animate-fade-in"
             >
               <div
                 className="flex items-center justify-between p-4"

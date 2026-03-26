@@ -95,7 +95,7 @@ export default function MemberManager({ members, expenses, onAdd, onRemove, show
           {visibleMembers.map((m, i) => (
             <div
               key={m.id}
-              className="flex items-center gap-2 bg-surface-light rounded-full pl-1 pr-2 py-1 group"
+              className="flex items-center gap-2 bg-surface-light rounded-full pl-1 pr-2 py-1 group animate-scale-in"
             >
               <div
                 className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"

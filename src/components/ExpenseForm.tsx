@@ -79,7 +79,7 @@ export default function ExpenseForm({ members, baseCurrency, onAdd, onCancel, ed
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-surface rounded-xl border border-border p-4 space-y-4">
+    <form onSubmit={handleSubmit} className="bg-surface rounded-xl border border-border p-4 space-y-4 animate-scale-in">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-text-primary uppercase tracking-wide">
           {isEditing ? 'Edit Expense' : 'New Expense'}
@@ -110,7 +110,7 @@ export default function ExpenseForm({ members, baseCurrency, onAdd, onCancel, ed
             value={currency}
             onChange={(e) => setCurrency(e.target.value)}
             aria-label="Currency"
-            className="w-24 bg-surface-light border border-border rounded-lg px-2 py-2.5 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
+            className="w-20 sm:w-24 bg-surface-light border border-border rounded-lg px-2 py-2.5 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
           >
             {Object.entries(CURRENCIES).map(([code, c]) => (
               <option key={code} value={code}>
