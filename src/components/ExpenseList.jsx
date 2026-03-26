@@ -1,4 +1,4 @@
-import { Trash2, Utensils, Car, Home, Ticket, ShoppingBag, ReceiptText } from 'lucide-react';
+import { Trash2, Utensils, Car, Home, Ticket, ShoppingBag, ReceiptText, Calendar } from 'lucide-react';
 import { formatCurrency } from '../utils/currencies';
 
 const CATEGORY_ICONS = {
@@ -56,6 +56,9 @@ export default function ExpenseList({ expenses, members, onRemove }) {
               </div>
               <div className="flex items-center justify-between mt-0.5">
                 <p className="text-xs text-text-secondary truncate">
+                  <Calendar size={11} className="inline -mt-0.5 mr-0.5" />
+                  {new Date(expense.date || expense.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                  {' · '}
                   Paid by <span className="text-primary-light">{getMemberName(expense.paidBy)}</span>
                   {' · '}
                   {expense.splitType === 'equal' ? 'Equal' : 'Custom'} split
