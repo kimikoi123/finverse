@@ -1,5 +1,6 @@
 import { ArrowLeft, Download, Upload, PlaneTakeoff } from 'lucide-react';
-import { useRef } from 'react';
+import { useRef, useState, useCallback } from 'react';
+import InlineAlert from './ui/InlineAlert';
 import type { Trip } from '../types';
 
 interface HeaderProps {
@@ -11,6 +12,8 @@ interface HeaderProps {
 
 export default function Header({ activeTrip, onBack, onExport, onImport }: HeaderProps) {
   const fileRef = useRef<HTMLInputElement>(null);
+  const [importError, setImportError] = useState<string | null>(null);
+  const dismissImportError = useCallback(() => setImportError(null), []);
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -18,7 +21,7 @@ export default function Header({ activeTrip, onBack, onExport, onImport }: Heade
     const reader = new FileReader();
     reader.onload = (ev) => {
       const success = onImport(ev.target?.result as string);
-      if (!success) alert('Invalid backup file');
+      if (!success) setImportError('Invalid backup file');
     };
     reader.readAsText(file);
     e.target.value = '';
@@ -73,6 +76,7 @@ export default function Header({ activeTrip, onBack, onExport, onImport }: Heade
           />
         </div>
       </div>
+      <InlineAlert message={importError} onDismiss={dismissImportError} autoDismissMs={5000} />
     </header>
   );
 }

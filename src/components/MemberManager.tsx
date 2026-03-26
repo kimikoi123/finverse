@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Plus, X, UserPlus } from 'lucide-react';
 import { getInitials, getAvatarColor } from '../utils/helpers';
+import InlineAlert from './ui/InlineAlert';
 import type { Member, Expense } from '../types';
 
 interface MemberManagerProps {
@@ -15,6 +16,8 @@ export default function MemberManager({ members, expenses, onAdd, onRemove, show
   const [name, setName] = useState('');
   const [showInput, setShowInput] = useState(false);
   const [pendingDeletes, setPendingDeletes] = useState<Set<string>>(new Set());
+  const [removeError, setRemoveError] = useState<string | null>(null);
+  const dismissRemoveError = useCallback(() => setRemoveError(null), []);
 
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,7 +31,7 @@ export default function MemberManager({ members, expenses, onAdd, onRemove, show
 
   const handleRemove = (member: Member) => {
     if (memberHasExpenses(member.id)) {
-      alert(`Can't remove ${member.name} — they have expenses.`);
+      setRemoveError(`Can't remove ${member.name} — they have expenses.`);
       return;
     }
 
@@ -108,6 +111,7 @@ export default function MemberManager({ members, expenses, onAdd, onRemove, show
           ))}
         </div>
       )}
+      <InlineAlert message={removeError} onDismiss={dismissRemoveError} autoDismissMs={4000} />
     </div>
   );
 }

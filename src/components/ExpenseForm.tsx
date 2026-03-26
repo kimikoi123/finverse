@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Plus, Check, X } from 'lucide-react';
 import { CURRENCIES } from '../utils/currencies';
+import InlineAlert from './ui/InlineAlert';
 import type { Member, Expense, SplitType } from '../types';
 
 interface ExpenseFormProps {
@@ -23,6 +24,12 @@ export default function ExpenseForm({ members, baseCurrency, onAdd, onCancel, ed
   const [customAmounts, setCustomAmounts] = useState<Record<string, number>>(editingExpense?.customAmounts ?? {});
   const [category, setCategory] = useState(editingExpense?.category ?? 'general');
   const [date, setDate] = useState(() => editingExpense?.date ?? new Date().toISOString().slice(0, 10));
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const dismissValidation = useCallback(() => setValidationError(null), []);
+
+  useEffect(() => {
+    setValidationError(null);
+  }, [splitType, customAmounts]);
 
   const CATEGORIES = [
     { value: 'food', label: 'Food & Drinks' },
@@ -59,7 +66,7 @@ export default function ExpenseForm({ members, baseCurrency, onAdd, onCancel, ed
     if (splitType === 'custom') {
       const total = Object.values(customAmounts).reduce((s, v) => s + (v || 0), 0);
       if (Math.abs(total - parseFloat(amount)) > 0.01) {
-        alert(`Custom amounts (${total.toFixed(2)}) must equal the total (${parseFloat(amount).toFixed(2)})`);
+        setValidationError(`Custom amounts (${total.toFixed(2)}) must equal the total (${parseFloat(amount).toFixed(2)})`);
         return;
       }
     }
@@ -235,6 +242,8 @@ export default function ExpenseForm({ members, baseCurrency, onAdd, onCancel, ed
           </div>
         )}
       </div>
+
+      <InlineAlert message={validationError} onDismiss={dismissValidation} autoDismissMs={5000} />
 
       <button
         type="submit"
