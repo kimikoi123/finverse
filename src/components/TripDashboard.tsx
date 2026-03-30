@@ -81,6 +81,22 @@ export default function TripDashboard({
     setShowExpenseForm(false);
   };
 
+  const handleMarkPaid = (from: string, to: string, amount: number) => {
+    const fromMember = trip.members.find(m => m.id === from);
+    const toMember = trip.members.find(m => m.id === to);
+    onAddExpense({
+      description: `Settlement: ${fromMember?.name ?? 'Unknown'} → ${toMember?.name ?? 'Unknown'}`,
+      amount,
+      currency: trip.baseCurrency,
+      paidBy: from,
+      splitType: 'custom',
+      participants: [to],
+      customAmounts: { [to]: amount },
+      category: 'settlement',
+      isSettlement: true,
+    });
+  };
+
   const handleShare = () => {
     const url = generateShareUrl(trip);
     setShareUrl(url);
@@ -107,13 +123,14 @@ export default function TripDashboard({
           <p className="text-[10px] text-text-secondary uppercase tracking-wide" data-heading>Members</p>
         </div>
         <div className="bg-surface rounded-xl border border-border p-3 text-center">
-          <p className="text-lg font-bold text-text-primary">{trip.expenses.length}</p>
+          <p className="text-lg font-bold text-text-primary">{trip.expenses.filter(e => !e.isSettlement).length}</p>
           <p className="text-[10px] text-text-secondary uppercase tracking-wide" data-heading>Expenses</p>
         </div>
         <div className="col-span-2 sm:col-span-1 bg-gradient-to-r from-primary/10 to-accent/10 rounded-xl border border-primary/20 p-3 text-center">
           <p className="text-base sm:text-lg font-bold text-accent truncate" style={{ fontVariantNumeric: 'tabular-nums' }}>
             {CURRENCIES[trip.baseCurrency]?.symbol}
             {trip.expenses
+              .filter(e => !e.isSettlement)
               .reduce((sum, e) => convertToBase(e.amount, e.currency, trip.baseCurrency, exchangeRates.rates) + sum, 0)
               .toFixed(2)}
           </p>
@@ -238,6 +255,8 @@ export default function TripDashboard({
           members={trip.members}
           baseCurrency={trip.baseCurrency}
           rates={exchangeRates.rates}
+          onMarkPaid={handleMarkPaid}
+          onUnmarkPaid={onRemoveExpense}
         />
         </div>
       )}

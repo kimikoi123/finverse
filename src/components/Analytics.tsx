@@ -46,7 +46,8 @@ interface AnalyticsProps {
 }
 
 export default function Analytics({ trip, exchangeRates }: AnalyticsProps) {
-  const { expenses, members, baseCurrency } = trip;
+  const { members, baseCurrency } = trip;
+  const expenses = useMemo(() => trip.expenses.filter(e => !e.isSettlement), [trip.expenses]);
 
   const categoryBreakdown = useMemo(() => {
     const totals: Record<string, number> = {};

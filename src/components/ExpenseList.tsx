@@ -63,7 +63,7 @@ export default function ExpenseList({ expenses, members, onRemove, onEdit, showT
     }, 5500);
   };
 
-  const visibleExpenses = expenses.filter((e) => !pendingDeletes.has(e.id));
+  const visibleExpenses = expenses.filter((e) => !pendingDeletes.has(e.id) && !e.isSettlement);
 
   const filteredExpenses = useMemo(() => {
     let result = visibleExpenses;
@@ -79,7 +79,7 @@ export default function ExpenseList({ expenses, members, onRemove, onEdit, showT
 
   const hasActiveFilters = searchQuery || selectedCategory;
 
-  if (expenses.length === 0) {
+  if (expenses.filter(e => !e.isSettlement).length === 0) {
     return (
       <div className="text-center py-8">
         <ReceiptText size={32} className="text-text-secondary mx-auto mb-2" />

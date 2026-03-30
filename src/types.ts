@@ -22,6 +22,7 @@ export interface Expense {
   customAmounts: Record<string, number>;
   category: string;
   date?: string;
+  isSettlement?: boolean;
   createdAt: string;
 }
 
