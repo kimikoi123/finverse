@@ -1,44 +1,8 @@
 import { useMemo } from 'react';
-import { Utensils, Car, Home, Ticket, ShoppingBag, ReceiptText, TrendingUp, Users, CalendarDays, BarChart3 } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
+import { TrendingUp, Users, CalendarDays, BarChart3 } from 'lucide-react';
 import { convertToBase, formatCurrency } from '../utils/currencies';
+import { getCategoryIcon, getCategoryColor, getCategoryBarColor, getCategoryLabel } from '../utils/categories';
 import type { Trip, ExchangeRates } from '../types';
-
-const CATEGORY_ICONS: Record<string, LucideIcon> = {
-  food: Utensils,
-  transport: Car,
-  accommodation: Home,
-  activities: Ticket,
-  shopping: ShoppingBag,
-  general: ReceiptText,
-};
-
-const CATEGORY_BAR_COLORS: Record<string, string> = {
-  food: 'bg-orange-400',
-  transport: 'bg-blue-400',
-  accommodation: 'bg-purple-400',
-  activities: 'bg-green-400',
-  shopping: 'bg-pink-400',
-  general: 'bg-gray-400',
-};
-
-const CATEGORY_TEXT_COLORS: Record<string, string> = {
-  food: 'text-orange-400 bg-orange-400/15',
-  transport: 'text-blue-400 bg-blue-400/15',
-  accommodation: 'text-purple-400 bg-purple-400/15',
-  activities: 'text-green-400 bg-green-400/15',
-  shopping: 'text-pink-400 bg-pink-400/15',
-  general: 'text-gray-400 bg-gray-400/15',
-};
-
-const CATEGORY_LABELS: Record<string, string> = {
-  food: 'Food',
-  transport: 'Transport',
-  accommodation: 'Accommodation',
-  activities: 'Activities',
-  shopping: 'Shopping',
-  general: 'General',
-};
 
 interface AnalyticsProps {
   trip: Trip;
@@ -110,10 +74,10 @@ export default function Analytics({ trip, exchangeRates }: AnalyticsProps) {
         </div>
         <div className="space-y-3">
           {categoryBreakdown.entries.map(([category, amount]) => {
-            const Icon = CATEGORY_ICONS[category] ?? ReceiptText;
-            const barColor = CATEGORY_BAR_COLORS[category] ?? 'bg-gray-400';
-            const textColor = CATEGORY_TEXT_COLORS[category] ?? CATEGORY_TEXT_COLORS['general']!;
-            const label = CATEGORY_LABELS[category] ?? category;
+            const Icon = getCategoryIcon(category);
+            const barColor = getCategoryBarColor(category);
+            const textColor = getCategoryColor(category);
+            const label = getCategoryLabel(category, trip.customCategories);
             const percentage = categoryBreakdown.max > 0 ? (amount / categoryBreakdown.max) * 100 : 0;
             const sharePercent = categoryBreakdown.grandTotal > 0 ? (amount / categoryBreakdown.grandTotal) * 100 : 0;
 

@@ -1,19 +1,22 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Plus, Check, X } from 'lucide-react';
 import { CURRENCIES } from '../utils/currencies';
+import { getAllCategories, toSlug } from '../utils/categories';
 import InlineAlert from './ui/InlineAlert';
 import type { Member, Expense, SplitType } from '../types';
 
 interface ExpenseFormProps {
   members: Member[];
   baseCurrency: string;
+  customCategories?: string[];
   onAdd: (expense: Omit<Expense, 'id' | 'createdAt'>) => void;
   onCancel: () => void;
+  onAddCategory?: (name: string) => void;
   editingExpense?: Expense;
   onEdit?: (id: string, updates: Omit<Expense, 'id' | 'createdAt'>) => void;
 }
 
-export default function ExpenseForm({ members, baseCurrency, onAdd, onCancel, editingExpense, onEdit }: ExpenseFormProps) {
+export default function ExpenseForm({ members, baseCurrency, customCategories, onAdd, onCancel, onAddCategory, editingExpense, onEdit }: ExpenseFormProps) {
   const isEditing = !!editingExpense;
   const [description, setDescription] = useState(editingExpense?.description ?? '');
   const [amount, setAmount] = useState(editingExpense ? String(editingExpense.amount) : '');
@@ -29,20 +32,30 @@ export default function ExpenseForm({ members, baseCurrency, onAdd, onCancel, ed
   const [category, setCategory] = useState(editingExpense?.category ?? 'general');
   const [date, setDate] = useState(() => editingExpense?.date ?? new Date().toISOString().slice(0, 10));
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [addingCategory, setAddingCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
   const dismissValidation = useCallback(() => setValidationError(null), []);
 
   useEffect(() => {
     setValidationError(null);
   }, [splitType, customAmounts]);
 
-  const CATEGORIES = [
-    { value: 'food', label: 'Food & Drinks' },
-    { value: 'transport', label: 'Transport' },
-    { value: 'accommodation', label: 'Accommodation' },
-    { value: 'activities', label: 'Activities' },
-    { value: 'shopping', label: 'Shopping' },
-    { value: 'general', label: 'General' },
-  ];
+  const categories = getAllCategories(customCategories);
+
+  const handleAddCategory = () => {
+    const slug = toSlug(newCategoryName);
+    if (!slug) return;
+    if (categories.some((c) => c.value === slug)) {
+      setCategory(slug);
+      setAddingCategory(false);
+      setNewCategoryName('');
+      return;
+    }
+    onAddCategory?.(slug);
+    setCategory(slug);
+    setAddingCategory(false);
+    setNewCategoryName('');
+  };
 
   const toggleParticipant = (id: string) => {
     setParticipants((prev) => {
@@ -165,18 +178,46 @@ export default function ExpenseForm({ members, baseCurrency, onAdd, onCancel, ed
           />
         </div>
 
-        <select
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-          aria-label="Expense category"
-          className="bg-surface-light border border-border rounded-lg px-3 py-2.5 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
-        >
-          {CATEGORIES.map((c) => (
-            <option key={c.value} value={c.value}>
-              {c.label}
-            </option>
-          ))}
-        </select>
+        {addingCategory ? (
+          <div className="flex gap-1.5">
+            <input
+              type="text"
+              placeholder="Category name"
+              value={newCategoryName}
+              onChange={(e) => setNewCategoryName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddCategory(); } if (e.key === 'Escape') setAddingCategory(false); }}
+              aria-label="New category name"
+              className="flex-1 bg-surface-light border border-border rounded-lg px-3 py-2.5 text-sm text-text-primary placeholder:text-text-secondary/50 focus:outline-none focus:ring-2 focus:ring-primary/50"
+              autoFocus
+            />
+            <button type="button" onClick={handleAddCategory} className="p-2.5 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors" aria-label="Confirm new category">
+              <Check size={14} />
+            </button>
+            <button type="button" onClick={() => setAddingCategory(false)} className="p-2.5 bg-surface-light border border-border text-text-secondary hover:text-text-primary rounded-lg transition-colors" aria-label="Cancel adding category">
+              <X size={14} />
+            </button>
+          </div>
+        ) : (
+          <select
+            value={category}
+            onChange={(e) => {
+              if (e.target.value === '__add_new__') {
+                setAddingCategory(true);
+              } else {
+                setCategory(e.target.value);
+              }
+            }}
+            aria-label="Expense category"
+            className="bg-surface-light border border-border rounded-lg px-3 py-2.5 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/50"
+          >
+            {categories.map((c) => (
+              <option key={c.value} value={c.value}>
+                {c.label}
+              </option>
+            ))}
+            <option value="__add_new__">+ Add Category</option>
+          </select>
+        )}
 
         <input
           type="date"

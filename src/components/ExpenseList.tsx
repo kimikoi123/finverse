@@ -1,46 +1,20 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { Pencil, Trash2, Utensils, Car, Home, Ticket, ShoppingBag, ReceiptText, Calendar, Search, X } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
+import { Pencil, Trash2, ReceiptText, Calendar, Search, X } from 'lucide-react';
 import { formatCurrency } from '../utils/currencies';
+import { getAllCategories, getCategoryIcon, getCategoryColor } from '../utils/categories';
 import type { Expense, Member } from '../types';
-
-const CATEGORY_ICONS: Record<string, LucideIcon> = {
-  food: Utensils,
-  transport: Car,
-  accommodation: Home,
-  activities: Ticket,
-  shopping: ShoppingBag,
-  general: ReceiptText,
-};
-
-const CATEGORY_COLORS: Record<string, string> = {
-  food: 'text-orange-400 bg-orange-400/15',
-  transport: 'text-blue-400 bg-blue-400/15',
-  accommodation: 'text-purple-400 bg-purple-400/15',
-  activities: 'text-green-400 bg-green-400/15',
-  shopping: 'text-pink-400 bg-pink-400/15',
-  general: 'text-gray-400 bg-gray-400/15',
-};
-
-const CATEGORY_LABELS: Record<string, string> = {
-  food: 'Food',
-  transport: 'Transport',
-  accommodation: 'Accommodation',
-  activities: 'Activities',
-  shopping: 'Shopping',
-  general: 'General',
-};
 
 interface ExpenseListProps {
   expenses: Expense[];
   members: Member[];
+  customCategories?: string[];
   onRemove: (id: string) => void;
   onEdit: (expense: Expense) => void;
   onQuickEdit: (id: string, updates: Partial<Expense>) => void;
   showToast: (message: string, onCommit: () => void) => string;
 }
 
-export default function ExpenseList({ expenses, members, onRemove, onEdit, onQuickEdit, showToast }: ExpenseListProps) {
+export default function ExpenseList({ expenses, members, customCategories, onRemove, onEdit, onQuickEdit, showToast }: ExpenseListProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [pendingDeletes, setPendingDeletes] = useState<Set<string>>(new Set());
@@ -139,21 +113,21 @@ export default function ExpenseList({ expenses, members, onRemove, onEdit, onQui
             >
               All
             </button>
-            {Object.entries(CATEGORY_LABELS).map(([key, label]) => {
-              const Icon = CATEGORY_ICONS[key]!;
-              const isActive = selectedCategory === key;
+            {getAllCategories(customCategories).map((cat) => {
+              const Icon = getCategoryIcon(cat.value);
+              const isActive = selectedCategory === cat.value;
               return (
                 <button
-                  key={key}
-                  onClick={() => setSelectedCategory(isActive ? null : key)}
+                  key={cat.value}
+                  onClick={() => setSelectedCategory(isActive ? null : cat.value)}
                   className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1 ${
                     isActive
-                      ? CATEGORY_COLORS[key]!
+                      ? getCategoryColor(cat.value)
                       : 'bg-surface border border-border text-text-secondary hover:text-text-primary'
                   }`}
                 >
                   <Icon size={12} />
-                  {label}
+                  {cat.label}
                 </button>
               );
             })}
@@ -182,8 +156,8 @@ export default function ExpenseList({ expenses, members, onRemove, onEdit, onQui
             </p>
           )}
           {[...filteredExpenses].reverse().map((expense) => {
-            const Icon = CATEGORY_ICONS[expense.category] ?? ReceiptText;
-            const colorClass = CATEGORY_COLORS[expense.category] ?? CATEGORY_COLORS['general']!;
+            const Icon = getCategoryIcon(expense.category);
+            const colorClass = getCategoryColor(expense.category);
 
             return (
               <div

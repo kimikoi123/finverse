@@ -52,6 +52,7 @@ export default function TripDashboard({
   onAddExpense,
   onRemoveExpense,
   onEditExpense,
+  onUpdateTrip,
   showToast,
 }: TripDashboardProps) {
   const [activeTab, setActiveTab] = useState('expenses');
@@ -95,6 +96,13 @@ export default function TripDashboard({
       category: 'settlement',
       isSettlement: true,
     });
+  };
+
+  const handleAddCategory = (name: string) => {
+    const existing = trip.customCategories ?? [];
+    if (!existing.includes(name)) {
+      onUpdateTrip({ customCategories: [...existing, name] });
+    }
   };
 
   const handleShare = () => {
@@ -225,8 +233,10 @@ export default function TripDashboard({
               key={editingExpense?.id ?? 'new'}
               members={trip.members}
               baseCurrency={trip.baseCurrency}
+              customCategories={trip.customCategories}
               onAdd={handleAddExpense}
               onCancel={handleCancelForm}
+              onAddCategory={handleAddCategory}
               editingExpense={editingExpense ?? undefined}
               onEdit={handleEditExpense}
             />
@@ -235,6 +245,7 @@ export default function TripDashboard({
           <ExpenseList
             expenses={trip.expenses}
             members={trip.members}
+            customCategories={trip.customCategories}
             onRemove={onRemoveExpense}
             onEdit={handleStartEdit}
             onQuickEdit={onEditExpense}

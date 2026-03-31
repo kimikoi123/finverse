@@ -33,6 +33,7 @@ export interface Trip {
   baseCurrency: string;
   members: Member[];
   expenses: Expense[];
+  customCategories?: string[];
   createdAt: string;
 }
 
