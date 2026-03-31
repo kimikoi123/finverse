@@ -62,7 +62,7 @@ export function calculateBalances(expenses: Expense[], members: Member[], baseCu
  * Calculate direct per-payer debts.
  * Each participant owes the person who actually paid, with per-pair netting.
  */
-export function calculateDirectDebts(expenses: Expense[], members: Member[], baseCurrency: string, rates: ExchangeRates): Debt[] {
+export function calculateDirectDebts(expenses: Expense[], _members: Member[], baseCurrency: string, rates: ExchangeRates): Debt[] {
   const debtMap = new Map<string, number>();
 
   const addDebt = (from: string, to: string, amount: number) => {

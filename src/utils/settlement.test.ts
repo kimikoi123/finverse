@@ -17,8 +17,21 @@ function makeExpense({
   customAmounts = {} as Record<string, number>,
   advancePayments = {} as Record<string, number>,
   category = 'food',
+  isSettlement,
+}: {
+  id?: string;
+  description?: string;
+  amount?: number;
+  currency?: string;
+  paidBy?: string;
+  splitType?: SplitType;
+  participants?: string[];
+  customAmounts?: Record<string, number>;
+  advancePayments?: Record<string, number>;
+  category?: string;
+  isSettlement?: boolean;
 } = {}): Expense {
-  return { id, description, amount, currency, paidBy, splitType, participants, customAmounts, advancePayments, category, createdAt: new Date().toISOString() };
+  return { id, description, amount, currency, paidBy, splitType, participants, customAmounts, advancePayments, category, isSettlement, createdAt: new Date().toISOString() };
 }
 
 // Invariant: sum of all balances must equal 0
@@ -27,17 +40,6 @@ function expectBalancesSum(balances: Balances): void {
   expect(sum).toBeCloseTo(0, 10);
 }
 
-// Verify debts fully settle all balances
-function expectDebtsSettleBalances(debts: Debt[], originalBalances: Balances): void {
-  const settled: Balances = { ...originalBalances };
-  debts.forEach(({ from, to, amount }) => {
-    settled[from] = (settled[from] || 0) + amount;
-    settled[to] = (settled[to] || 0) - amount;
-  });
-  Object.values(settled).forEach(v => {
-    expect(Math.abs(v)).toBeLessThan(0.02);
-  });
-}
 
 describe('calculateBalances', () => {
   it('equal split, 2 members: Alice pays 100, split [Alice, Bob]', () => {
