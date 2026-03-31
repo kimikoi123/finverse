@@ -256,6 +256,12 @@ export default function ExpenseList({ expenses, members, onRemove, onEdit, onQui
                       </span>
                       <span className="hidden sm:inline shrink-0">·</span>
                       <span className="hidden sm:inline shrink-0">{expense.splitType === 'equal' ? 'Equal' : 'Custom'} · {expense.participants.length} people</span>
+                      {expense.advancePayments && Object.values(expense.advancePayments).some(v => v > 0) && (
+                        <>
+                          <span className="shrink-0">·</span>
+                          <span className="shrink-0 text-accent">Advance paid</span>
+                        </>
+                      )}
                     </div>
                     <div className="flex items-center shrink-0 gap-0 sm:opacity-0 sm:group-hover:opacity-100">
                       <button

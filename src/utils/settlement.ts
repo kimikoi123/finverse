@@ -38,6 +38,21 @@ export function calculateBalances(expenses: Expense[], members: Member[], baseCu
         });
       }
     }
+
+    // Apply advance payments: member who paid in advance gets credit, payer's credit is reduced
+    if (expense.advancePayments) {
+      Object.entries(expense.advancePayments).forEach(([pid, advanceAmt]) => {
+        if (advanceAmt > 0) {
+          const advanceInBase = convertToBase(advanceAmt, expense.currency, baseCurrency, rates);
+          if (balances[pid] !== undefined) {
+            balances[pid] += advanceInBase;
+          }
+          if (balances[payer] !== undefined) {
+            balances[payer] -= advanceInBase;
+          }
+        }
+      });
+    }
   });
 
   return balances;

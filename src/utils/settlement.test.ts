@@ -15,9 +15,10 @@ function makeExpense({
   splitType = 'equal' as SplitType,
   participants = [] as string[],
   customAmounts = {} as Record<string, number>,
+  advancePayments = {} as Record<string, number>,
   category = 'food',
 } = {}): Expense {
-  return { id, description, amount, currency, paidBy, splitType, participants, customAmounts, category, createdAt: new Date().toISOString() };
+  return { id, description, amount, currency, paidBy, splitType, participants, customAmounts, advancePayments, category, createdAt: new Date().toISOString() };
 }
 
 // Invariant: sum of all balances must equal 0
@@ -143,6 +144,88 @@ describe('calculateBalances', () => {
     const balances = calculateBalances([], members, 'USD', { USD: 1 });
     expect(balances.Alice).toBeCloseTo(0, 2);
     expect(balances.Bob).toBeCloseTo(0, 2);
+    expectBalancesSum(balances);
+  });
+
+  it('advance payment: Bob pays full share in advance', () => {
+    const members = [makeMember('Alice'), makeMember('Bob'), makeMember('Carol')];
+    const expenses = [
+      makeExpense({
+        amount: 300,
+        paidBy: 'Alice',
+        participants: ['Alice', 'Bob', 'Carol'],
+        advancePayments: { Bob: 100 },
+      }),
+    ];
+    const balances = calculateBalances(expenses, members, 'USD', { USD: 1 });
+    expect(balances.Alice).toBeCloseTo(100, 2);
+    expect(balances.Bob).toBeCloseTo(0, 2);
+    expect(balances.Carol).toBeCloseTo(-100, 2);
+    expectBalancesSum(balances);
+  });
+
+  it('advance payment: no advancePayments field (backward compat)', () => {
+    const members = [makeMember('Alice'), makeMember('Bob')];
+    const expenses = [
+      makeExpense({ amount: 100, paidBy: 'Alice', participants: ['Alice', 'Bob'] }),
+    ];
+    const balances = calculateBalances(expenses, members, 'USD', { USD: 1 });
+    expect(balances.Alice).toBeCloseTo(50, 2);
+    expect(balances.Bob).toBeCloseTo(-50, 2);
+    expectBalancesSum(balances);
+  });
+
+  it('advance payment: partial advance', () => {
+    const members = [makeMember('Alice'), makeMember('Bob')];
+    const expenses = [
+      makeExpense({
+        amount: 100,
+        paidBy: 'Alice',
+        participants: ['Alice', 'Bob'],
+        advancePayments: { Bob: 30 },
+      }),
+    ];
+    const balances = calculateBalances(expenses, members, 'USD', { USD: 1 });
+    expect(balances.Alice).toBeCloseTo(20, 2);
+    expect(balances.Bob).toBeCloseTo(-20, 2);
+    expectBalancesSum(balances);
+  });
+
+  it('advance payment: multiple members pay in advance', () => {
+    const members = [makeMember('Alice'), makeMember('Bob'), makeMember('Carol')];
+    const expenses = [
+      makeExpense({
+        amount: 300,
+        paidBy: 'Alice',
+        participants: ['Alice', 'Bob', 'Carol'],
+        advancePayments: { Bob: 100, Carol: 50 },
+      }),
+    ];
+    const balances = calculateBalances(expenses, members, 'USD', { USD: 1 });
+    expect(balances.Alice).toBeCloseTo(50, 2);
+    expect(balances.Bob).toBeCloseTo(0, 2);
+    expect(balances.Carol).toBeCloseTo(-50, 2);
+    expectBalancesSum(balances);
+  });
+
+  it('advance payment: multi-currency (EUR expense, USD base)', () => {
+    const members = [makeMember('Alice'), makeMember('Bob')];
+    const rates = { EUR: 0.92, USD: 1 };
+    const expenses = [
+      makeExpense({
+        amount: 100,
+        currency: 'EUR',
+        paidBy: 'Alice',
+        participants: ['Alice', 'Bob'],
+        advancePayments: { Bob: 50 },
+      }),
+    ];
+    const balances = calculateBalances(expenses, members, 'USD', rates);
+    // 100 EUR in USD = 100/0.92 ~= 108.70. Each share ~= 54.35.
+    // Bob advance 50 EUR in USD = 50/0.92 ~= 54.35.
+    // Alice: 108.70 - 54.35 - 54.35 = 0, Bob: -54.35 + 54.35 = 0
+    expect(balances.Alice).toBeCloseTo(0, 0);
+    expect(balances.Bob).toBeCloseTo(0, 0);
     expectBalancesSum(balances);
   });
 });

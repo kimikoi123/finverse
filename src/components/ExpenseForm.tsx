@@ -22,6 +22,10 @@ export default function ExpenseForm({ members, baseCurrency, onAdd, onCancel, ed
   const [splitType, setSplitType] = useState<SplitType>(editingExpense?.splitType ?? 'equal');
   const [participants, setParticipants] = useState(editingExpense?.participants ?? members.map((m) => m.id));
   const [customAmounts, setCustomAmounts] = useState<Record<string, number>>(editingExpense?.customAmounts ?? {});
+  const [advancePayments, setAdvancePayments] = useState<Record<string, number>>(editingExpense?.advancePayments ?? {});
+  const [showAdvancePayments, setShowAdvancePayments] = useState(
+    () => Object.values(editingExpense?.advancePayments ?? {}).some(v => v > 0)
+  );
   const [category, setCategory] = useState(editingExpense?.category ?? 'general');
   const [date, setDate] = useState(() => editingExpense?.date ?? new Date().toISOString().slice(0, 10));
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -41,18 +45,29 @@ export default function ExpenseForm({ members, baseCurrency, onAdd, onCancel, ed
   ];
 
   const toggleParticipant = (id: string) => {
-    setParticipants((prev) =>
-      prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]
-    );
+    setParticipants((prev) => {
+      const removing = prev.includes(id);
+      if (removing) {
+        setAdvancePayments((ap) => {
+          const next = { ...ap };
+          delete next[id];
+          return next;
+        });
+        return prev.filter((p) => p !== id);
+      }
+      return [...prev, id];
+    });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!description.trim() || !amount || !paidBy || participants.length === 0) return;
 
+    const parsedAmount = parseFloat(amount);
+
     const expense: Omit<Expense, 'id' | 'createdAt'> = {
       description: description.trim(),
-      amount: parseFloat(amount),
+      amount: parsedAmount,
       currency,
       paidBy,
       splitType,
@@ -60,14 +75,34 @@ export default function ExpenseForm({ members, baseCurrency, onAdd, onCancel, ed
       category,
       date,
       customAmounts: splitType === 'custom' ? customAmounts : {},
+      advancePayments: showAdvancePayments ? advancePayments : {},
     };
 
     // Validate custom amounts
     if (splitType === 'custom') {
       const total = Object.values(customAmounts).reduce((s, v) => s + (v || 0), 0);
-      if (Math.abs(total - parseFloat(amount)) > 0.01) {
-        setValidationError(`Custom amounts (${total.toFixed(2)}) must equal the total (${parseFloat(amount).toFixed(2)})`);
+      if (Math.abs(total - parsedAmount) > 0.01) {
+        setValidationError(`Custom amounts (${total.toFixed(2)}) must equal the total (${parsedAmount.toFixed(2)})`);
         return;
+      }
+    }
+
+    // Validate advance payments
+    if (showAdvancePayments) {
+      for (const [pid, advAmt] of Object.entries(advancePayments)) {
+        if (advAmt <= 0) continue;
+        let share: number;
+        if (splitType === 'equal') {
+          share = parsedAmount / participants.length;
+        } else {
+          const totalCustom = Object.values(customAmounts).reduce((s, v) => s + v, 0);
+          share = totalCustom > 0 ? ((customAmounts[pid] ?? 0) / totalCustom) * parsedAmount : 0;
+        }
+        if (advAmt > share + 0.01) {
+          const memberName = members.find(m => m.id === pid)?.name ?? 'Unknown';
+          setValidationError(`${memberName}'s advance (${advAmt.toFixed(2)}) exceeds their share (${share.toFixed(2)})`);
+          return;
+        }
       }
     }
 
@@ -249,6 +284,54 @@ export default function ExpenseForm({ members, baseCurrency, onAdd, onCancel, ed
           </div>
         )}
       </div>
+
+      {/* Advance Payments */}
+      {participants.length > 0 && amount && (
+        <div>
+          <button
+            type="button"
+            onClick={() => setShowAdvancePayments(!showAdvancePayments)}
+            className="text-xs font-medium text-primary hover:text-primary-light transition-colors flex items-center gap-1"
+          >
+            {showAdvancePayments ? 'Hide advance payments' : 'Add advance payments'}
+          </button>
+          {showAdvancePayments && (
+            <div className="mt-2 space-y-2">
+              <p className="text-xs text-text-secondary">
+                Mark amounts already paid in advance by participants
+              </p>
+              {participants
+                .filter(pid => pid !== paidBy)
+                .map((pid) => {
+                  const memberName = members.find(m => m.id === pid)?.name ?? 'Unknown';
+                  return (
+                    <div key={pid} className="flex items-center gap-2">
+                      <span className="text-sm text-text-primary w-24 truncate">{memberName}</span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="0.00"
+                        value={advancePayments[pid] ?? ''}
+                        onChange={(e) =>
+                          setAdvancePayments((prev) => ({
+                            ...prev,
+                            [pid]: parseFloat(e.target.value) || 0,
+                          }))
+                        }
+                        aria-label={`Advance payment by ${memberName}`}
+                        className="flex-1 bg-surface-light border border-border rounded-lg px-3 py-2 text-sm text-text-primary placeholder:text-text-secondary/50 focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      />
+                    </div>
+                  );
+                })}
+              {participants.filter(pid => pid !== paidBy).length === 0 && (
+                <p className="text-xs text-text-secondary italic">Only the payer is a participant</p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       <InlineAlert message={validationError} onDismiss={dismissValidation} autoDismissMs={5000} />
 
