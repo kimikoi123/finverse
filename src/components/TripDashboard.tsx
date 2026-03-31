@@ -237,6 +237,7 @@ export default function TripDashboard({
             members={trip.members}
             onRemove={onRemoveExpense}
             onEdit={handleStartEdit}
+            onQuickEdit={onEditExpense}
             showToast={showToast}
           />
         </div>

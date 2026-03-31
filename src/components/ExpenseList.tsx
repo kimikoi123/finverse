@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { Pencil, Trash2, Utensils, Car, Home, Ticket, ShoppingBag, ReceiptText, Calendar, Search, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { formatCurrency } from '../utils/currencies';
@@ -36,13 +36,27 @@ interface ExpenseListProps {
   members: Member[];
   onRemove: (id: string) => void;
   onEdit: (expense: Expense) => void;
+  onQuickEdit: (id: string, updates: Partial<Expense>) => void;
   showToast: (message: string, onCommit: () => void) => string;
 }
 
-export default function ExpenseList({ expenses, members, onRemove, onEdit, showToast }: ExpenseListProps) {
+export default function ExpenseList({ expenses, members, onRemove, onEdit, onQuickEdit, showToast }: ExpenseListProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [pendingDeletes, setPendingDeletes] = useState<Set<string>>(new Set());
+  const [openPaidByDropdown, setOpenPaidByDropdown] = useState<string | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!openPaidByDropdown) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setOpenPaidByDropdown(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [openPaidByDropdown]);
 
   const getMemberName = (id: string) => members.find((m) => m.id === id)?.name ?? 'Unknown';
 
@@ -195,7 +209,51 @@ export default function ExpenseList({ expenses, members, onRemove, onEdit, showT
                         {new Date(expense.date || expense.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                       </span>
                       <span className="shrink-0">·</span>
-                      <span className="shrink-0">Paid by <span className="text-primary-light">{getMemberName(expense.paidBy)}</span></span>
+                      <span className="shrink-0 relative" ref={openPaidByDropdown === expense.id ? dropdownRef : undefined}>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOpenPaidByDropdown(openPaidByDropdown === expense.id ? null : expense.id);
+                          }}
+                          className="hover:bg-white/5 rounded px-1 -mx-1 py-0.5 -my-0.5 transition-colors"
+                          aria-label={`Change who paid for ${expense.description}`}
+                          aria-expanded={openPaidByDropdown === expense.id}
+                          aria-haspopup="listbox"
+                        >
+                          Paid by <span className="text-primary-light underline decoration-dotted underline-offset-2">{getMemberName(expense.paidBy)}</span>
+                        </button>
+                        {openPaidByDropdown === expense.id && (
+                          <div
+                            role="listbox"
+                            aria-label="Select who paid"
+                            className="absolute left-0 top-full mt-1 z-50 bg-surface border border-border rounded-lg shadow-lg py-1 min-w-[140px] animate-fade-in"
+                          >
+                            {members.map((member) => (
+                              <button
+                                key={member.id}
+                                role="option"
+                                aria-selected={member.id === expense.paidBy}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (member.id !== expense.paidBy) {
+                                    onQuickEdit(expense.id, { paidBy: member.id });
+                                  }
+                                  setOpenPaidByDropdown(null);
+                                }}
+                                className={`w-full text-left px-3 py-2 text-sm transition-colors min-h-[44px] flex items-center ${
+                                  member.id === expense.paidBy
+                                    ? 'text-primary-light bg-primary/10'
+                                    : 'text-text-primary hover:bg-white/5'
+                                }`}
+                              >
+                                {member.name}
+                                {member.id === expense.paidBy && <span className="ml-auto text-primary-light">&#10003;</span>}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </span>
                       <span className="hidden sm:inline shrink-0">·</span>
                       <span className="hidden sm:inline shrink-0">{expense.splitType === 'equal' ? 'Equal' : 'Custom'} · {expense.participants.length} people</span>
                     </div>
