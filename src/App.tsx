@@ -20,6 +20,10 @@ function App() {
     activeTrip,
     createTrip,
     deleteTrip,
+    deletedTrips,
+    restoreTrip,
+    permanentlyDeleteTrip,
+    emptyTrash,
     setActiveTrip,
     updateTrip,
     addMember,
@@ -127,9 +131,13 @@ function App() {
       ) : (
         <TripList
           trips={state.trips}
+          deletedTrips={deletedTrips}
           onSelect={setActiveTrip}
           onCreate={createTrip}
           onDelete={deleteTrip}
+          onRestore={restoreTrip}
+          onPermanentlyDelete={permanentlyDeleteTrip}
+          onEmptyTrash={emptyTrash}
           showToast={showToast}
         />
       )}

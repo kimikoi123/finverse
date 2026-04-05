@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { generateId } from '../utils/helpers';
-import type { Trip, TripState, Member, Expense } from '../types';
-import { loadState, saveState } from '../db/storage';
+import type { Trip, TripState, DeletedTrip, Member, Expense } from '../types';
+import { loadState, saveState, loadDeletedTrips, addDeletedTrip, removeDeletedTrip, clearAllDeletedTrips } from '../db/storage';
 import { migrateFromLocalStorage } from '../db/migrate';
 
 const INITIAL_STATE: TripState = {
@@ -11,6 +11,7 @@ const INITIAL_STATE: TripState = {
 
 export function useTrip() {
   const [state, setState] = useState<TripState>(INITIAL_STATE);
+  const [deletedTrips, setDeletedTrips] = useState<DeletedTrip[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -19,14 +20,15 @@ export function useTrip() {
       const migrated = await migrateFromLocalStorage();
       if (migrated && !cancelled) {
         setState(migrated);
-        setLoading(false);
-        return;
-      }
-      const stored = await loadState();
-      if (!cancelled) {
-        if (stored.trips.length > 0 || stored.activeTripId) {
+      } else {
+        const stored = await loadState();
+        if (!cancelled && (stored.trips.length > 0 || stored.activeTripId)) {
           setState(stored);
         }
+      }
+      if (!cancelled) {
+        const deleted = await loadDeletedTrips();
+        setDeletedTrips(deleted);
         setLoading(false);
       }
     }
@@ -61,12 +63,47 @@ export function useTrip() {
   }, [state, persist]);
 
   const deleteTrip = useCallback((tripId: string) => {
+    const trip = state.trips.find((t) => t.id === tripId);
     const newTrips = state.trips.filter((t) => t.id !== tripId);
     persist({
       trips: newTrips,
       activeTripId: state.activeTripId === tripId ? null : state.activeTripId,
     });
+    if (trip) {
+      const deletedAt = new Date().toISOString();
+      setDeletedTrips((prev) => [...prev, { trip, deletedAt }]);
+      addDeletedTrip(trip).catch((err: unknown) => {
+        console.error('Failed to save deleted trip:', err);
+      });
+    }
   }, [state, persist]);
+
+  const restoreTrip = useCallback((tripId: string) => {
+    const entry = deletedTrips.find((d) => d.trip.id === tripId);
+    if (!entry) return;
+    setDeletedTrips((prev) => prev.filter((d) => d.trip.id !== tripId));
+    removeDeletedTrip(tripId).catch((err: unknown) => {
+      console.error('Failed to remove from deleted trips:', err);
+    });
+    persist({
+      trips: [...state.trips, entry.trip],
+      activeTripId: state.activeTripId,
+    });
+  }, [deletedTrips, state, persist]);
+
+  const permanentlyDeleteTrip = useCallback((tripId: string) => {
+    setDeletedTrips((prev) => prev.filter((d) => d.trip.id !== tripId));
+    removeDeletedTrip(tripId).catch((err: unknown) => {
+      console.error('Failed to permanently delete trip:', err);
+    });
+  }, []);
+
+  const emptyTrash = useCallback(() => {
+    setDeletedTrips([]);
+    clearAllDeletedTrips().catch((err: unknown) => {
+      console.error('Failed to empty trash:', err);
+    });
+  }, []);
 
   const setActiveTrip = useCallback((tripId: string | null) => {
     persist({ ...state, activeTripId: tripId });
@@ -170,8 +207,12 @@ export function useTrip() {
     loading,
     state,
     activeTrip,
+    deletedTrips,
     createTrip,
     deleteTrip,
+    restoreTrip,
+    permanentlyDeleteTrip,
+    emptyTrash,
     setActiveTrip,
     updateTrip,
     addMember,

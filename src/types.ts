@@ -55,6 +55,11 @@ export interface ExchangeRateResult {
   source: RateSource;
 }
 
+export interface DeletedTrip {
+  trip: Trip;
+  deletedAt: string;
+}
+
 export interface TripState {
   trips: Trip[];
   activeTripId: string | null;
