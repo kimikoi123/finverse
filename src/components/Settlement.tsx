@@ -21,8 +21,8 @@ export default function Settlement({ expenses, members, baseCurrency, rates, onM
 
   if (members.length === 0 || expenses.length === 0) {
     return (
-      <div className="bg-surface rounded-xl border border-border p-4 text-center py-8">
-        <p className="text-text-secondary text-sm">Add members and expenses to see settlements</p>
+      <div className="bg-surface rounded-2xl border border-border p-4 text-center py-10">
+        <p className="text-text-secondary/50 text-sm">Add members and expenses to see settlements</p>
       </div>
     );
   }
@@ -49,45 +49,59 @@ export default function Settlement({ expenses, members, baseCurrency, rates, onM
       return sum + convertToBase(e.amount, e.currency, baseCurrency, rates);
     }, 0);
 
+  const maxAbsBalance = Math.max(...members.map(m => Math.abs(balances[m.id] ?? 0)), 0.01);
+
   return (
     <div className="space-y-4">
       {/* Summary */}
-      <div className="bg-surface rounded-xl border border-border p-4">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-text-primary uppercase tracking-wide">
+      <div className="bg-surface rounded-2xl border border-border p-4">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-[10px] font-medium text-text-secondary/50 uppercase tracking-widest" data-heading>
             Balances
           </h3>
-          <span className="text-xs text-text-secondary">
+          <span className="text-xs text-text-secondary/40">
             Total: {formatCurrency(totalSpent, baseCurrency)}
           </span>
         </div>
-        <div className="space-y-2">
+        <div className="space-y-3">
           {members.map((m, i) => {
             const balance = balances[m.id] ?? 0;
             const isPositive = balance > 0.01;
             const isNegative = balance < -0.01;
+            const barWidth = (Math.abs(balance) / maxAbsBalance) * 100;
 
             return (
-              <div key={m.id} className="flex items-center gap-3">
-                <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"
-                  style={{ backgroundColor: getAvatarColor(i) }}
-                >
-                  {getInitials(m.name)}
-                </div>
-                <span className="text-sm text-text-primary flex-1 truncate">{m.name}</span>
-                <div className="flex items-center gap-1">
-                  {isPositive && <TrendingUp size={14} className="text-success" />}
-                  {isNegative && <TrendingDown size={14} className="text-danger" />}
-                  <span
-                    className={`text-sm font-medium ${
-                      isPositive ? 'text-success' : isNegative ? 'text-danger' : 'text-text-secondary'
-                    }`}
+              <div key={m.id}>
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0 ring-2 ring-surface"
+                    style={{ backgroundColor: getAvatarColor(i) }}
                   >
-                    {isPositive ? '+' : ''}
-                    {formatCurrency(balance, baseCurrency)}
-                  </span>
+                    {getInitials(m.name)}
+                  </div>
+                  <span className="text-sm text-text-primary flex-1 truncate">{m.name}</span>
+                  <div className="flex items-center gap-1.5">
+                    {isPositive && <TrendingUp size={13} className="text-success/70" />}
+                    {isNegative && <TrendingDown size={13} className="text-danger/70" />}
+                    <span
+                      className={`text-sm font-medium ${
+                        isPositive ? 'text-success' : isNegative ? 'text-danger' : 'text-text-secondary/40'
+                      }`}
+                      style={{ fontVariantNumeric: 'tabular-nums' }}
+                    >
+                      {isPositive ? '+' : ''}
+                      {formatCurrency(balance, baseCurrency)}
+                    </span>
+                  </div>
                 </div>
+                {(isPositive || isNegative) && (
+                  <div className="ml-11 mt-1.5 h-1 rounded-full bg-surface-light/50 overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-500 ${isPositive ? 'bg-success/35' : 'bg-danger/35'}`}
+                      style={{ width: `${barWidth}%` }}
+                    />
+                  </div>
+                )}
               </div>
             );
           })}
@@ -95,20 +109,20 @@ export default function Settlement({ expenses, members, baseCurrency, rates, onM
       </div>
 
       {/* Settlement */}
-      <div className="bg-surface rounded-xl border border-border p-4">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-text-primary uppercase tracking-wide" data-heading>
+      <div className="bg-surface rounded-2xl border border-border p-4">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-[10px] font-medium text-text-secondary/50 uppercase tracking-widest" data-heading>
             Who Pays Who
           </h3>
-          <div className="flex gap-1 bg-surface-light rounded-lg p-0.5">
+          <div className="flex gap-0.5 bg-surface-light/50 rounded-xl p-0.5">
             {(['direct', 'simplified'] as const).map((mode) => (
               <button
                 key={mode}
                 onClick={() => setDebtMode(mode)}
-                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors capitalize ${
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all capitalize ${
                   debtMode === mode
-                    ? 'bg-primary text-white'
-                    : 'text-text-secondary hover:text-text-primary'
+                    ? 'bg-surface-elevated text-text-primary shadow-layered-sm ring-1 ring-white/[0.04]'
+                    : 'text-text-secondary/40 hover:text-text-secondary'
                 }`}
               >
                 {mode}
@@ -118,7 +132,11 @@ export default function Settlement({ expenses, members, baseCurrency, rates, onM
         </div>
 
         {debts.length === 0 && settledDebts.length === 0 ? (
-          <p className="text-sm text-success text-center py-4">All settled up!</p>
+          <div className="text-center py-8">
+            <CheckCircle size={44} className="text-success/30 mx-auto mb-3 animate-pulse-glow" />
+            <p className="text-base font-medium text-success/80">All settled up!</p>
+            <p className="text-xs text-text-secondary/40 mt-1">Everyone's square</p>
+          </div>
         ) : (
           <div className="space-y-3">
             {/* Active debts grouped by creditor */}
@@ -135,18 +153,18 @@ export default function Settlement({ expenses, members, baseCurrency, rates, onM
                 if (!creditor) return null;
 
                 return (
-                  <div key={creditorId} className="bg-surface-light rounded-lg p-3">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-xs text-text-secondary">Pay</span>
+                  <div key={creditorId} className="bg-surface-light/40 rounded-xl p-3.5">
+                    <div className="flex items-center gap-2 mb-2.5">
+                      <span className="text-[10px] text-text-secondary/40 uppercase tracking-wider">Pay</span>
                       <div
-                        className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold text-white shrink-0"
+                        className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold text-white shrink-0 ring-2 ring-surface-light/40"
                         style={{ backgroundColor: getAvatarColor(getMemberIndex(creditorId)) }}
                       >
                         {getInitials(creditor.name)}
                       </div>
                       <span className="text-sm font-semibold text-text-primary">{creditor.name}</span>
                     </div>
-                    <div className="space-y-1.5 ml-2">
+                    <div className="space-y-2 ml-2">
                       {creditorDebts.map((debt, i) => {
                         const from = getMember(debt.from);
                         if (!from) return null;
@@ -154,9 +172,9 @@ export default function Settlement({ expenses, members, baseCurrency, rates, onM
                         return (
                           <div key={i} className="flex items-center justify-between">
                             <div className="flex items-center gap-2 min-w-0">
-                              <ArrowRight size={12} className="text-text-secondary shrink-0" />
+                              <ArrowRight size={11} className="text-text-secondary/30 shrink-0" />
                               <div
-                                className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold text-white shrink-0"
+                                className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold text-white shrink-0 ring-2 ring-surface-light/40"
                                 style={{ backgroundColor: getAvatarColor(getMemberIndex(debt.from)) }}
                               >
                                 {getInitials(from.name)}
@@ -170,10 +188,11 @@ export default function Settlement({ expenses, members, baseCurrency, rates, onM
                               {onMarkPaid && (
                                 <button
                                   onClick={() => onMarkPaid(debt.from, debt.to, debt.amount)}
-                                  className="p-1 rounded-md text-text-secondary hover:text-success hover:bg-success/10 transition-colors"
+                                  className="px-2 py-1 rounded-lg text-[10px] font-medium bg-success/10 text-success/70 hover:text-success hover:bg-success/15 transition-all flex items-center gap-1"
                                   title="Mark as paid"
                                 >
-                                  <CheckCircle size={18} />
+                                  <CheckCircle size={12} />
+                                  <span className="hidden sm:inline">Paid</span>
                                 </button>
                               )}
                             </div>
@@ -195,12 +214,12 @@ export default function Settlement({ expenses, members, baseCurrency, rates, onM
               return (
                 <div
                   key={debt.expenseId}
-                  className="bg-surface-light rounded-lg p-3 opacity-50"
+                  className="bg-surface-light/25 rounded-xl p-3.5 opacity-50"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 min-w-0">
                       <div
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"
+                        className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0 ring-2 ring-surface-light/25"
                         style={{ backgroundColor: getAvatarColor(getMemberIndex(debt.from)) }}
                       >
                         {getInitials(from.name)}
@@ -208,31 +227,31 @@ export default function Settlement({ expenses, members, baseCurrency, rates, onM
                       <span className="text-sm font-medium text-text-primary truncate line-through">{from.name}</span>
                     </div>
                     <div className="flex items-center gap-2 shrink-0 ml-2">
-                      <CheckCircle size={14} className="text-success" />
-                      <span className="text-sm font-semibold text-success line-through" style={{ fontVariantNumeric: 'tabular-nums' }}>
+                      <CheckCircle size={13} className="text-success/60" />
+                      <span className="text-sm font-semibold text-success/60 line-through" style={{ fontVariantNumeric: 'tabular-nums' }}>
                         {formatCurrency(debt.amount, baseCurrency)}
                       </span>
                       {onUnmarkPaid && (
                         <button
                           onClick={() => onUnmarkPaid(debt.expenseId)}
-                          className="p-1 rounded-md text-text-secondary hover:text-danger hover:bg-danger/10 transition-colors"
+                          className="p-1.5 rounded-lg text-text-secondary/40 hover:text-danger hover:bg-danger/10 transition-all"
                           title="Undo settlement"
                         >
-                          <Undo2 size={16} />
+                          <Undo2 size={14} />
                         </button>
                       )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2 mt-1.5 ml-4">
-                    <ArrowRight size={12} className="text-text-secondary shrink-0" />
-                    <span className="text-xs text-text-secondary">paid</span>
+                    <ArrowRight size={11} className="text-text-secondary/25 shrink-0" />
+                    <span className="text-[10px] text-text-secondary/40">paid</span>
                     <div
                       className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold text-white shrink-0"
                       style={{ backgroundColor: getAvatarColor(getMemberIndex(debt.to!)) }}
                     >
                       {getInitials(to.name)}
                     </div>
-                    <span className="text-xs text-text-primary truncate">{to.name}</span>
+                    <span className="text-xs text-text-primary/60 truncate">{to.name}</span>
                   </div>
                 </div>
               );
@@ -241,7 +260,9 @@ export default function Settlement({ expenses, members, baseCurrency, rates, onM
         )}
 
         {debts.length === 0 && settledDebts.length > 0 && (
-          <p className="text-sm text-success text-center py-2">All settled up!</p>
+          <div className="text-center py-4">
+            <p className="text-sm text-success/60 font-medium">All settled up!</p>
+          </div>
         )}
       </div>
     </div>

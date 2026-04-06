@@ -57,22 +57,24 @@ export default function Analytics({ trip, exchangeRates }: AnalyticsProps) {
 
   if (expenses.length === 0) {
     return (
-      <div className="text-center py-8">
-        <BarChart3 size={32} className="text-text-secondary mx-auto mb-2" />
-        <p className="text-text-secondary text-sm">Add expenses to see analytics</p>
+      <div className="text-center py-10">
+        <BarChart3 size={28} className="text-text-secondary/25 mx-auto mb-3" />
+        <p className="text-text-secondary/50 text-sm">Add expenses to see analytics</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Section A: Per-Category Breakdown */}
-      <div className="bg-surface rounded-xl border border-border p-4">
-        <div className="flex items-center gap-2 mb-4">
-          <TrendingUp size={16} className="text-primary" />
-          <h3 className="text-sm font-semibold text-text-primary">Spending by Category</h3>
+      <div className="bg-surface rounded-2xl border border-border p-4">
+        <div className="flex items-center gap-2.5 mb-5">
+          <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center">
+            <TrendingUp size={15} className="text-primary/70" />
+          </div>
+          <h3 className="text-sm font-semibold text-text-primary tracking-tight">Spending by Category</h3>
         </div>
-        <div className="space-y-3">
+        <div className="space-y-3.5">
           {categoryBreakdown.entries.map(([category, amount]) => {
             const Icon = getCategoryIcon(category);
             const barColor = getCategoryBarColor(category);
@@ -82,23 +84,23 @@ export default function Analytics({ trip, exchangeRates }: AnalyticsProps) {
             const sharePercent = categoryBreakdown.grandTotal > 0 ? (amount / categoryBreakdown.grandTotal) * 100 : 0;
 
             return (
-              <div key={category} className="hover:bg-surface-light/50 -mx-2 px-2 py-1.5 rounded-lg transition-colors">
-                <div className="flex items-center justify-between mb-1">
-                  <div className="flex items-center gap-2">
-                    <div className={`w-7 h-7 rounded-md flex items-center justify-center shrink-0 ${textColor}`}>
-                      <Icon size={14} />
+              <div key={category} className="hover:bg-surface-light/20 -mx-2 px-2 py-1.5 rounded-xl transition-colors">
+                <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center gap-2.5">
+                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${textColor}`}>
+                      <Icon size={13} />
                     </div>
                     <span className="text-sm text-text-primary">{label}</span>
-                    <span className="text-xs text-text-secondary">{sharePercent.toFixed(0)}%</span>
+                    <span className="text-[10px] text-text-secondary/35">{sharePercent.toFixed(0)}%</span>
                   </div>
                   <span className="text-sm font-medium text-text-primary" style={{ fontVariantNumeric: 'tabular-nums' }}>
                     {formatCurrency(amount, baseCurrency)}
                   </span>
                 </div>
-                <div className="h-2 rounded-full bg-surface-light overflow-hidden">
+                <div className="h-2.5 rounded-full bg-surface-light/40 overflow-hidden">
                   <div
-                    className={`h-2 rounded-full ${barColor} animate-bar-grow shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]`}
-                    style={{ '--target-width': `${percentage}%`, width: `${percentage}%` } as React.CSSProperties}
+                    className={`h-2.5 rounded-full ${barColor} animate-bar-grow`}
+                    style={{ '--target-width': `${percentage}%`, width: `${percentage}%`, opacity: 0.7 } as React.CSSProperties}
                   />
                 </div>
               </div>
@@ -108,27 +110,29 @@ export default function Analytics({ trip, exchangeRates }: AnalyticsProps) {
       </div>
 
       {/* Section B: Per-Member Spending */}
-      <div className="bg-surface rounded-xl border border-border p-4">
-        <div className="flex items-center gap-2 mb-4">
-          <Users size={16} className="text-primary" />
-          <h3 className="text-sm font-semibold text-text-primary">Spending by Member</h3>
+      <div className="bg-surface rounded-2xl border border-border p-4">
+        <div className="flex items-center gap-2.5 mb-5">
+          <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center">
+            <Users size={15} className="text-primary/70" />
+          </div>
+          <h3 className="text-sm font-semibold text-text-primary tracking-tight">Spending by Member</h3>
         </div>
-        <div className="space-y-3">
+        <div className="space-y-3.5">
           {memberBreakdown.entries.map(([memberId, amount]) => {
             const percentage = memberBreakdown.max > 0 ? (amount / memberBreakdown.max) * 100 : 0;
 
             return (
-              <div key={memberId} className="hover:bg-surface-light/50 -mx-2 px-2 py-1.5 rounded-lg transition-colors">
-                <div className="flex items-center justify-between mb-1">
+              <div key={memberId} className="hover:bg-surface-light/20 -mx-2 px-2 py-1.5 rounded-xl transition-colors">
+                <div className="flex items-center justify-between mb-1.5">
                   <span className="text-sm text-text-primary">{getMemberName(memberId)}</span>
                   <span className="text-sm font-medium text-text-primary" style={{ fontVariantNumeric: 'tabular-nums' }}>
                     {formatCurrency(amount, baseCurrency)}
                   </span>
                 </div>
-                <div className="h-2 rounded-full bg-surface-light overflow-hidden">
+                <div className="h-2.5 rounded-full bg-surface-light/40 overflow-hidden">
                   <div
-                    className="h-2 rounded-full bg-primary animate-bar-grow shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]"
-                    style={{ '--target-width': `${percentage}%`, width: `${percentage}%` } as React.CSSProperties}
+                    className="h-2.5 rounded-full bg-primary animate-bar-grow"
+                    style={{ '--target-width': `${percentage}%`, width: `${percentage}%`, opacity: 0.6 } as React.CSSProperties}
                   />
                 </div>
               </div>
@@ -139,12 +143,14 @@ export default function Analytics({ trip, exchangeRates }: AnalyticsProps) {
 
       {/* Section C: Daily Spending */}
       {dailyBreakdown != null && (
-        <div className="bg-surface rounded-xl border border-border p-4">
-          <div className="flex items-center gap-2 mb-4">
-            <CalendarDays size={16} className="text-primary" />
-            <h3 className="text-sm font-semibold text-text-primary">Daily Spending</h3>
+        <div className="bg-surface rounded-2xl border border-border p-4">
+          <div className="flex items-center gap-2.5 mb-5">
+            <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center">
+              <CalendarDays size={15} className="text-primary/70" />
+            </div>
+            <h3 className="text-sm font-semibold text-text-primary tracking-tight">Daily Spending</h3>
           </div>
-          <div className="space-y-3">
+          <div className="space-y-3.5">
             {dailyBreakdown.entries.map(([date, amount]) => {
               const percentage = dailyBreakdown.max > 0 ? (amount / dailyBreakdown.max) * 100 : 0;
               const formatted = new Date(date + 'T00:00:00').toLocaleDateString(undefined, {
@@ -154,17 +160,17 @@ export default function Analytics({ trip, exchangeRates }: AnalyticsProps) {
               });
 
               return (
-                <div key={date} className="hover:bg-surface-light/50 -mx-2 px-2 py-1.5 rounded-lg transition-colors">
-                  <div className="flex items-center justify-between mb-1">
+                <div key={date} className="hover:bg-surface-light/20 -mx-2 px-2 py-1.5 rounded-xl transition-colors">
+                  <div className="flex items-center justify-between mb-1.5">
                     <span className="text-sm text-text-primary">{formatted}</span>
                     <span className="text-sm font-medium text-text-primary" style={{ fontVariantNumeric: 'tabular-nums' }}>
                       {formatCurrency(amount, baseCurrency)}
                     </span>
                   </div>
-                  <div className="h-2 rounded-full bg-surface-light overflow-hidden">
+                  <div className="h-2.5 rounded-full bg-surface-light/40 overflow-hidden">
                     <div
-                      className="h-2 rounded-full bg-accent animate-bar-grow shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]"
-                      style={{ '--target-width': `${percentage}%`, width: `${percentage}%` } as React.CSSProperties}
+                      className="h-2.5 rounded-full bg-accent animate-bar-grow"
+                      style={{ '--target-width': `${percentage}%`, width: `${percentage}%`, opacity: 0.6 } as React.CSSProperties}
                     />
                   </div>
                 </div>

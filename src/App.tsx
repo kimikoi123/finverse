@@ -64,33 +64,33 @@ function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#13131f]">
+      <div className="min-h-screen bg-[#0e0e14]">
         {/* Skeleton header */}
-        <div className="bg-surface px-4 py-3 sm:px-6 border-b border-border">
-          <div className="max-w-5xl mx-auto flex items-center justify-between">
+        <div className="bg-surface px-4 py-3.5 sm:px-6 border-b border-border/50">
+          <div className="max-w-2xl mx-auto flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg animate-shimmer" />
-              <div className="space-y-1.5">
-                <div className="h-4 w-24 rounded animate-shimmer" />
-                <div className="h-3 w-32 rounded animate-shimmer" />
+              <div className="w-10 h-10 rounded-xl animate-shimmer" />
+              <div className="space-y-2">
+                <div className="h-4 w-20 rounded-lg animate-shimmer" />
+                <div className="h-3 w-28 rounded-lg animate-shimmer" />
               </div>
             </div>
-            <div className="flex gap-2">
-              <div className="w-9 h-9 rounded-lg animate-shimmer" />
-              <div className="w-9 h-9 rounded-lg animate-shimmer" />
+            <div className="flex gap-1.5">
+              <div className="w-10 h-10 rounded-xl animate-shimmer" />
+              <div className="w-10 h-10 rounded-xl animate-shimmer" />
             </div>
           </div>
         </div>
         {/* Skeleton content */}
         <div className="max-w-2xl mx-auto w-full p-4 sm:p-6 space-y-3">
-          <div className="flex items-center justify-between mb-6">
-            <div className="h-6 w-28 rounded animate-shimmer" />
-            <div className="h-9 w-24 rounded-lg animate-shimmer" />
+          <div className="flex items-center justify-between mb-8">
+            <div className="h-5 w-24 rounded-lg animate-shimmer" />
+            <div className="h-10 w-28 rounded-xl animate-shimmer" />
           </div>
           {[1, 2, 3].map((i) => (
-            <div key={i} className="bg-surface rounded-xl border border-border p-4">
-              <div className="h-4 w-40 rounded animate-shimmer mb-2" />
-              <div className="h-3 w-56 rounded animate-shimmer" />
+            <div key={i} className="bg-surface rounded-2xl border border-border p-4">
+              <div className="h-4 w-36 rounded-lg animate-shimmer mb-2.5" />
+              <div className="h-3 w-48 rounded-lg animate-shimmer" />
             </div>
           ))}
         </div>
@@ -99,7 +99,7 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#13131f]" style={{ paddingLeft: 'env(safe-area-inset-left, 0px)', paddingRight: 'env(safe-area-inset-right, 0px)' }}>
+    <div className="min-h-screen bg-[#0e0e14]" style={{ paddingLeft: 'env(safe-area-inset-left, 0px)', paddingRight: 'env(safe-area-inset-right, 0px)' }}>
       <Header
         activeTrip={activeTrip}
         onBack={() => setActiveTrip(null)}

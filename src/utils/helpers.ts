@@ -12,8 +12,16 @@ export function getInitials(name: string): string {
 }
 
 const AVATAR_COLORS = [
-  '#6366f1', '#ec4899', '#f59e0b', '#10b981', '#3b82f6',
-  '#8b5cf6', '#ef4444', '#14b8a6', '#f97316', '#06b6d4',
+  '#7C5CFC', // rich purple
+  '#E5484D', // warm red
+  '#F5A623', // golden amber
+  '#30A46C', // forest green
+  '#3E93F8', // sky blue
+  '#D864D8', // orchid pink
+  '#E8835F', // coral
+  '#2EBDE5', // cyan
+  '#8B5CF6', // violet
+  '#F76B6B', // salmon
 ];
 
 export function getAvatarColor(index: number): string {
