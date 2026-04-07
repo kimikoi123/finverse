@@ -40,7 +40,7 @@ import SettingsScreen from './components/Settings';
 import { useGoals } from './hooks/useGoals';
 import { useDebts } from './hooks/useDebts';
 import { useInstallments } from './hooks/useInstallments';
-import type { Trip, Account, Budget, Goal, DebtEntry, Installment, ThemePreference } from './types';
+import type { Trip, Account, Budget, Goal, DebtEntry, Installment, ThemePreference, Transaction } from './types';
 
 function App() {
   const {
@@ -69,7 +69,7 @@ function App() {
   const { isOnline } = useOnlineStatus();
   const { toasts, showToast, undoToast, dismissToast, duration } = useToast();
   const { theme, setTheme } = useTheme();
-  const { transactions, addTransaction } = useTransactions();
+  const { transactions, addTransaction, editTransaction, removeTransaction } = useTransactions();
   const { preferences, loading: prefsLoading, updatePreferences } = useUserPreferences();
   const { accounts, netWorth, addAccount, editAccount, removeAccount } = useAccounts();
   const { budgets: budgetsWithSpending, addBudget, editBudget, removeBudget } = useBudgets(transactions);
@@ -80,6 +80,7 @@ function App() {
   const [activeTab, setActiveTab] = useState<TabId>('home');
   const [showActionMenu, setShowActionMenu] = useState(false);
   const [showTransactionForm, setShowTransactionForm] = useState<{ type: 'income' | 'expense' } | null>(null);
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [showAddAccountFlow, setShowAddAccountFlow] = useState(false);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
@@ -143,10 +144,26 @@ function App() {
   }, []);
 
   const handleSaveTransaction = useCallback(async (txn: { type: 'income' | 'expense'; amount: number; currency: string; category: string; description: string; date: string; accountId?: string }) => {
-    await addTransaction(txn);
-    setShowTransactionForm(null);
-    showToast(txn.type === 'expense' ? 'Expense added' : 'Income added', () => {});
-  }, [addTransaction, showToast]);
+    if (editingTransaction) {
+      await editTransaction(editingTransaction.id, txn);
+      setEditingTransaction(null);
+      setShowTransactionForm(null);
+      showToast('Transaction updated', () => {});
+    } else {
+      await addTransaction(txn);
+      setShowTransactionForm(null);
+      showToast(txn.type === 'expense' ? 'Expense added' : 'Income added', () => {});
+    }
+  }, [addTransaction, editTransaction, editingTransaction, showToast]);
+
+  const handleEditTransaction = useCallback((txn: Transaction) => {
+    setEditingTransaction(txn);
+    setShowTransactionForm({ type: txn.type });
+  }, []);
+
+  const handleDeleteTransaction = useCallback(async (id: string) => {
+    await removeTransaction(id);
+  }, [removeTransaction]);
 
   const handleSaveAccount = useCallback(async (data: Omit<Account, 'id' | 'createdAt' | 'sortOrder'>) => {
     if (editingAccount) {
@@ -468,6 +485,9 @@ function App() {
           <HistoryTab
             transactions={transactions}
             defaultCurrency={preferences.defaultCurrency}
+            onEdit={handleEditTransaction}
+            onDelete={handleDeleteTransaction}
+            showToast={showToast}
           />
         )}
       </main>
@@ -499,8 +519,9 @@ function App() {
           defaultCurrency={preferences.defaultCurrency}
           accounts={accounts}
           customBudgets={budgetsWithSpending.filter((b) => b.type === 'custom')}
+          editingTransaction={editingTransaction ?? undefined}
           onSave={handleSaveTransaction}
-          onCancel={() => setShowTransactionForm(null)}
+          onCancel={() => { setShowTransactionForm(null); setEditingTransaction(null); }}
         />
       )}
 

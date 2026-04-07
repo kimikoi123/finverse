@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Search, X, Inbox } from 'lucide-react';
+import { Search, X, Inbox, Pencil, Trash2 } from 'lucide-react';
 import type { Transaction } from '../types';
 import { formatCurrency } from '../utils/currencies';
 import { getFinanceCategoryDef } from '../utils/categories';
@@ -7,6 +7,9 @@ import { getFinanceCategoryDef } from '../utils/categories';
 interface HistoryTabProps {
   transactions: Transaction[];
   defaultCurrency: string;
+  onEdit?: (transaction: Transaction) => void;
+  onDelete?: (id: string) => void;
+  showToast?: (message: string, onCommit: () => void) => string;
 }
 
 type FilterType = 'all' | 'income' | 'expense';
@@ -22,12 +25,29 @@ function getDateLabel(dateStr: string, todayStr: string, yesterdayStr: string): 
   return `${weekday}, ${month} ${day}`;
 }
 
-export default function HistoryTab({ transactions, defaultCurrency }: HistoryTabProps) {
+export default function HistoryTab({ transactions, defaultCurrency, onEdit, onDelete, showToast }: HistoryTabProps) {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<FilterType>('all');
+  const [pendingDeletes, setPendingDeletes] = useState<Set<string>>(new Set());
+
+  const handleDelete = (t: Transaction) => {
+    if (!onDelete || !showToast) return;
+    setPendingDeletes((prev) => new Set(prev).add(t.id));
+    showToast(`"${t.description || 'Transaction'}" deleted`, () => {
+      onDelete(t.id);
+    });
+    setTimeout(() => {
+      setPendingDeletes((prev) => {
+        const next = new Set(prev);
+        next.delete(t.id);
+        return next;
+      });
+    }, 5500);
+  };
 
   const filteredTransactions = useMemo(() => {
     return transactions.filter((t) => {
+      if (pendingDeletes.has(t.id)) return false;
       if (filter !== 'all' && t.type !== filter) return false;
       if (search.trim() !== '') {
         const query = search.trim().toLowerCase();
@@ -35,7 +55,7 @@ export default function HistoryTab({ transactions, defaultCurrency }: HistoryTab
       }
       return true;
     });
-  }, [transactions, filter, search]);
+  }, [transactions, filter, search, pendingDeletes]);
 
   const groupedByDate = useMemo(() => {
     const today = new Date();
@@ -182,15 +202,37 @@ export default function HistoryTab({ transactions, defaultCurrency }: HistoryTab
                         <p className="text-xs text-text-secondary">{cat.label}</p>
                       </div>
 
-                      {/* Amount */}
-                      <span
-                        className={`text-sm font-semibold shrink-0 ${
-                          isExpense ? 'text-danger' : 'text-success'
-                        }`}
-                      >
-                        {isExpense ? '-' : '+'}
-                        {formatCurrency(t.amount, t.currency || defaultCurrency)}
-                      </span>
+                      {/* Amount + actions */}
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span
+                          className={`text-sm font-semibold ${
+                            isExpense ? 'text-danger' : 'text-success'
+                          }`}
+                        >
+                          {isExpense ? '-' : '+'}
+                          {formatCurrency(t.amount, t.currency || defaultCurrency)}
+                        </span>
+                        {onEdit && (
+                          <button
+                            type="button"
+                            onClick={() => onEdit(t)}
+                            aria-label="Edit transaction"
+                            className="min-w-[36px] min-h-[36px] flex items-center justify-center text-text-secondary hover:text-primary active:opacity-60 transition-colors rounded-lg"
+                          >
+                            <Pencil size={15} />
+                          </button>
+                        )}
+                        {onDelete && showToast && (
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(t)}
+                            aria-label="Delete transaction"
+                            className="min-w-[36px] min-h-[36px] flex items-center justify-center text-text-secondary hover:text-danger active:opacity-60 transition-colors rounded-lg"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   );
                 })}

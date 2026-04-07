@@ -3,13 +3,14 @@ import { ChevronDown, X } from 'lucide-react';
 import { CURRENCIES } from '../utils/currencies';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '../utils/categories';
 import type { FinanceCategoryDef } from '../utils/categories';
-import type { Account, Budget } from '../types';
+import type { Account, Budget, Transaction } from '../types';
 
 interface TransactionFormProps {
   type: 'income' | 'expense';
   defaultCurrency: string;
   accounts?: Account[];
   customBudgets?: Budget[];
+  editingTransaction?: Transaction;
   onSave: (txn: {
     type: 'income' | 'expense';
     amount: number;
@@ -30,22 +31,24 @@ export default function TransactionForm({
   defaultCurrency,
   accounts,
   customBudgets,
+  editingTransaction,
   onSave,
   onCancel,
 }: TransactionFormProps) {
   const categories: FinanceCategoryDef[] =
     type === 'expense' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES;
 
-  const [amount, setAmount] = useState('');
-  const [currency, setCurrency] = useState(defaultCurrency);
-  const [description, setDescription] = useState('');
-  const [category, setCategory] = useState(categories[0]?.value ?? 'other');
-  const [date, setDate] = useState(() => new Date().toISOString().split('T')[0] ?? '');
-  const [accountId, setAccountId] = useState<string | undefined>(undefined);
-  const [budgetId, setBudgetId] = useState<string | undefined>(undefined);
-  const [isRecurring, setIsRecurring] = useState(false);
-  const [recurringDay, setRecurringDay] = useState(() => new Date().getDate());
+  const [amount, setAmount] = useState(editingTransaction ? String(editingTransaction.amount) : '');
+  const [currency, setCurrency] = useState(editingTransaction?.currency ?? defaultCurrency);
+  const [description, setDescription] = useState(editingTransaction?.description ?? '');
+  const [category, setCategory] = useState(editingTransaction?.category ?? categories[0]?.value ?? 'other');
+  const [date, setDate] = useState(editingTransaction?.date ?? (() => new Date().toISOString().split('T')[0] ?? ''));
+  const [accountId, setAccountId] = useState<string | undefined>(editingTransaction?.accountId);
+  const [budgetId, setBudgetId] = useState<string | undefined>(editingTransaction?.budgetId);
+  const [isRecurring, setIsRecurring] = useState(editingTransaction?.isRecurring ?? false);
+  const [recurringDay, setRecurringDay] = useState(editingTransaction?.recurringDay ?? (() => new Date().getDate()));
   const [showCurrencyDropdown, setShowCurrencyDropdown] = useState(false);
+  const isEditing = !!editingTransaction;
 
   const parsedAmount = parseFloat(amount) || 0;
   const canSave = parsedAmount > 0;
@@ -85,7 +88,7 @@ export default function TransactionForm({
             <X size={20} />
           </button>
           <h1 className="text-base font-semibold text-text-primary">
-            {isExpense ? 'Add Expense' : 'Add Income'}
+            {isEditing ? (isExpense ? 'Edit Expense' : 'Edit Income') : (isExpense ? 'Add Expense' : 'Add Income')}
           </h1>
           <div className="min-w-[44px]" />
         </div>
