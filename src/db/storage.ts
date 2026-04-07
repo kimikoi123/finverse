@@ -122,6 +122,14 @@ export async function deleteAccount(id: string): Promise<void> {
   await db.accounts.delete(id);
 }
 
+export async function batchUpdateSortOrder(updates: { id: string; sortOrder: number }[]): Promise<void> {
+  await db.transaction('rw', db.accounts, async () => {
+    for (const { id, sortOrder } of updates) {
+      await db.accounts.update(id, { sortOrder });
+    }
+  });
+}
+
 // Budgets
 export async function loadBudgets(): Promise<Budget[]> {
   return db.budgets.toArray();
