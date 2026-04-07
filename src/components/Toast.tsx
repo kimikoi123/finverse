@@ -55,7 +55,7 @@ export default function ToastContainer({ toasts, duration, onUndo, onDismiss }: 
 
   return (
     <div
-      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 w-full max-w-sm px-4"
+      className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 w-full max-w-sm px-4"
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
       aria-live="polite"
       role="status"

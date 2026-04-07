@@ -141,7 +141,7 @@ export default function ExpenseList({ expenses, members, customCategories, onRem
               );
             })}
           </div>
-          <div className="absolute right-0 top-0 bottom-1 w-8 bg-gradient-to-l from-[#0e0e14] to-transparent pointer-events-none sm:hidden" />
+          <div className="absolute right-0 top-0 bottom-1 w-8 bg-gradient-to-l from-bg to-transparent pointer-events-none sm:hidden" />
         </div>
       </div>
 

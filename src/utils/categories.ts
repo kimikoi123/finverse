@@ -76,3 +76,37 @@ export function getCategoryLabel(key: string, customCategories?: string[]): stri
 export function toSlug(name: string): string {
   return name.trim().toLowerCase().replace(/\s+/g, '-');
 }
+
+// Personal finance categories
+export interface FinanceCategoryDef {
+  value: string;
+  label: string;
+  emoji: string;
+}
+
+export const EXPENSE_CATEGORIES: FinanceCategoryDef[] = [
+  { value: 'food', label: 'Food', emoji: '🍔' },
+  { value: 'transport', label: 'Transport', emoji: '🚌' },
+  { value: 'shopping', label: 'Shopping', emoji: '🛍️' },
+  { value: 'bills', label: 'Bills', emoji: '📄' },
+  { value: 'entertainment', label: 'Entertainment', emoji: '🎮' },
+  { value: 'health', label: 'Health', emoji: '💊' },
+  { value: 'education', label: 'Education', emoji: '📚' },
+  { value: 'other', label: 'Other', emoji: '📦' },
+];
+
+export const INCOME_CATEGORIES: FinanceCategoryDef[] = [
+  { value: 'salary', label: 'Salary', emoji: '💰' },
+  { value: 'freelance', label: 'Freelance', emoji: '💼' },
+  { value: 'gift', label: 'Gift', emoji: '🎁' },
+  { value: 'refund', label: 'Refund', emoji: '↩️' },
+  { value: 'other-income', label: 'Other', emoji: '📦' },
+];
+
+export function getFinanceCategoryDef(value: string): FinanceCategoryDef {
+  return (
+    EXPENSE_CATEGORIES.find((c) => c.value === value) ??
+    INCOME_CATEGORIES.find((c) => c.value === value) ??
+    { value, label: value, emoji: '📦' }
+  );
+}

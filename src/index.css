@@ -1,24 +1,79 @@
 @import "tailwindcss";
 
+/* Light theme (default) */
+:root {
+  --primary: #2d6a4f;
+  --primary-dark: #1b4332;
+  --primary-light: #52b788;
+  --primary-hover: #40916c;
+  --accent: #f5a623;
+  --accent-warm: #fb923c;
+  --danger: #dc2626;
+  --success: #16a34a;
+  --bg: #f5f5f5;
+  --surface: #ffffff;
+  --surface-light: #f3f4f6;
+  --surface-lighter: #e5e7eb;
+  --surface-elevated: #f9fafb;
+  --surface-hover: #f3f4f6;
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+  --border: #e5e7eb;
+  --border-subtle: #d1d5db;
+  --primary-glow: rgba(45, 106, 79, 0.12);
+  --glass-bg: rgba(255, 255, 255, 0.85);
+  --glass-border: rgba(0, 0, 0, 0.06);
+  --scrollbar-thumb: rgba(0, 0, 0, 0.12);
+  --scrollbar-thumb-hover: rgba(0, 0, 0, 0.2);
+}
+
+/* Dark theme */
+.dark {
+  --primary: #2d6a4f;
+  --primary-dark: #1b4332;
+  --primary-light: #52b788;
+  --primary-hover: #40916c;
+  --accent: #f5a623;
+  --accent-warm: #fb923c;
+  --danger: #ef4444;
+  --success: #30a46c;
+  --bg: #0e0e14;
+  --surface: #16161e;
+  --surface-light: #1c1c28;
+  --surface-lighter: #262635;
+  --surface-elevated: #20202e;
+  --surface-hover: #24243a;
+  --text-primary: #ececf1;
+  --text-secondary: #8a8fa4;
+  --border: #26263a;
+  --border-subtle: #1e1e30;
+  --primary-glow: rgba(45, 106, 79, 0.12);
+  --glass-bg: rgba(18, 18, 26, 0.82);
+  --glass-border: rgba(255, 255, 255, 0.04);
+  --scrollbar-thumb: rgba(255, 255, 255, 0.08);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.14);
+}
+
 @theme {
-  --color-primary: #6366f1;
-  --color-primary-dark: #4f46e5;
-  --color-primary-light: #818cf8;
-  --color-primary-hover: #7c7ff7;
-  --color-accent: #f5a623;
-  --color-accent-warm: #fb923c;
-  --color-danger: #ef4444;
-  --color-success: #30a46c;
-  --color-surface: #16161e;
-  --color-surface-light: #1c1c28;
-  --color-surface-lighter: #262635;
-  --color-surface-elevated: #20202e;
-  --color-surface-hover: #24243a;
-  --color-text-primary: #ececf1;
-  --color-text-secondary: #8a8fa4;
-  --color-border: #26263a;
-  --color-border-subtle: #1e1e30;
-  --color-primary-glow: rgba(99, 102, 241, 0.12);
+  --color-primary: var(--primary);
+  --color-primary-dark: var(--primary-dark);
+  --color-primary-light: var(--primary-light);
+  --color-primary-hover: var(--primary-hover);
+  --color-accent: var(--accent);
+  --color-accent-warm: var(--accent-warm);
+  --color-danger: var(--danger);
+  --color-success: var(--success);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-light: var(--surface-light);
+  --color-surface-lighter: var(--surface-lighter);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-surface-hover: var(--surface-hover);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-border: var(--border);
+  --color-border-subtle: var(--border-subtle);
+  --color-primary-glow: var(--primary-glow);
 }
 
 html {
@@ -28,7 +83,7 @@ html {
 
 body {
   margin: 0;
-  background-color: #0e0e14;
+  background-color: var(--bg);
   color: var(--color-text-primary);
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   overscroll-behavior-y: contain;
@@ -42,7 +97,7 @@ body::before {
   position: fixed;
   inset: 0;
   background:
-    radial-gradient(ellipse 80% 60% at 20% 10%, rgba(99, 102, 241, 0.045) 0%, transparent 60%),
+    radial-gradient(ellipse 80% 60% at 20% 10%, rgba(45, 106, 79, 0.045) 0%, transparent 60%),
     radial-gradient(ellipse 60% 50% at 80% 90%, rgba(245, 166, 35, 0.025) 0%, transparent 55%);
   pointer-events: none;
   z-index: 0;
@@ -83,19 +138,19 @@ input, select, textarea {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--scrollbar-thumb);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.14);
+  background: var(--scrollbar-thumb-hover);
 }
 
 /* Glass utility */
 .glass {
-  background: rgba(18, 18, 26, 0.82);
+  background: var(--glass-bg);
   backdrop-filter: blur(24px) saturate(1.3);
   -webkit-backdrop-filter: blur(24px) saturate(1.3);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid var(--glass-border);
 }
 
 /* Shadow system */
@@ -112,7 +167,7 @@ input, select, textarea {
 }
 
 .shadow-glow-primary {
-  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.08), 0 2px 12px rgba(99, 102, 241, 0.06);
+  box-shadow: 0 0 0 1px rgba(45, 106, 79, 0.08), 0 2px 12px rgba(45, 106, 79, 0.06);
 }
 
 /* Animations */

@@ -3,7 +3,7 @@ import { Plus, Trash2, Users, Receipt, ChevronRight, RotateCcw, ChevronDown, Che
 import { CURRENCIES } from '../utils/currencies';
 import type { Trip, DeletedTrip } from '../types';
 
-const TRIP_ACCENT_COLORS = ['#6366f1', '#f5a623', '#30a46c', '#e5484d', '#3e93f8', '#d864d8', '#2ebde5'];
+const TRIP_ACCENT_COLORS = ['#2d6a4f', '#f5a623', '#30a46c', '#e5484d', '#3e93f8', '#d864d8', '#2ebde5'];
 
 interface TripListProps {
   trips: Trip[];

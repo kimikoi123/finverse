@@ -1,7 +1,7 @@
 {
-  "name": "Travel Splitter",
-  "short_name": "Splitter",
-  "description": "Split travel expenses with friends",
+  "name": "Finance Tracker",
+  "short_name": "Finance",
+  "description": "Personal finance tracker & trip expense splitter",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0e0e14",
