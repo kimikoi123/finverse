@@ -117,7 +117,7 @@ export default function BudgetList({
         <button
           type="button"
           onClick={onBack}
-          className="p-2 -ml-2 rounded-xl hover:bg-surface-light transition-colors"
+          className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-surface-light transition-colors"
           aria-label="Go back"
         >
           <ArrowLeft className="w-5 h-5 text-text-secondary" />
