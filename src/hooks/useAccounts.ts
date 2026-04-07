@@ -5,6 +5,7 @@ import {
   addAccount as dbAddAccount,
   updateAccount as dbUpdateAccount,
   deleteAccount as dbDeleteAccount,
+  batchUpdateSortOrder,
 } from '../db/storage';
 
 export const ACCOUNT_COLORS = [
@@ -45,6 +46,22 @@ export function useAccounts() {
     setAccounts((prev) => prev.filter((a) => a.id !== id));
   }, []);
 
+  const reorderAccounts = useCallback(async (activeId: string, overId: string) => {
+    const oldIndex = accounts.findIndex((a) => a.id === activeId);
+    const newIndex = accounts.findIndex((a) => a.id === overId);
+    if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return;
+
+    const reordered = [...accounts];
+    const [moved] = reordered.splice(oldIndex, 1);
+    if (!moved) return;
+    reordered.splice(newIndex, 0, moved);
+
+    const updated = reordered.map((a, i) => ({ ...a, sortOrder: i }));
+    setAccounts(updated);
+
+    await batchUpdateSortOrder(updated.map((a) => ({ id: a.id, sortOrder: a.sortOrder })));
+  }, [accounts]);
+
   const netWorth = useMemo(() => {
     return accounts.reduce((sum, acc) => {
       if (acc.type === 'credit') {
@@ -57,5 +74,5 @@ export function useAccounts() {
     }, 0);
   }, [accounts]);
 
-  return { accounts, loading, addAccount, editAccount, removeAccount, netWorth };
+  return { accounts, loading, addAccount, editAccount, removeAccount, reorderAccounts, netWorth };
 }
