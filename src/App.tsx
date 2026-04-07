@@ -71,7 +71,7 @@ function App() {
   const { theme, setTheme } = useTheme();
   const { transactions, addTransaction, editTransaction, removeTransaction } = useTransactions();
   const { preferences, loading: prefsLoading, updatePreferences } = useUserPreferences();
-  const { accounts, netWorth, addAccount, editAccount, removeAccount } = useAccounts();
+  const { accounts, netWorth, addAccount, editAccount, removeAccount, reorderAccounts } = useAccounts();
   const { budgets: budgetsWithSpending, addBudget, editBudget, removeBudget } = useBudgets(transactions);
   const { goals, addGoal, editGoal, removeGoal } = useGoals();
   const { debts, addDebt, editDebt, removeDebt } = useDebts();
@@ -410,6 +410,7 @@ function App() {
               defaultCurrency={preferences.defaultCurrency}
               onAddAccount={handleAddAccount}
               onSelectAccount={setSelectedAccountId}
+              onReorderAccounts={reorderAccounts}
             />
           )
         )}
