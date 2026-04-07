@@ -6,6 +6,7 @@ import type { FinanceCategoryDef } from '../utils/categories';
 import { BUDGET_PRESETS, getPresetInitials } from '../utils/budgetPresets';
 import type { BudgetPreset } from '../utils/budgetPresets';
 import { ACCOUNT_COLORS } from '../hooks/useAccounts';
+import LogoBadge from './ui/LogoBadge';
 
 interface CreateBudgetFlowProps {
   mode: 'category' | 'custom';
@@ -375,12 +376,7 @@ function PresetGrid({
                 onClick={() => onSelectPreset(preset)}
                 className="flex flex-col items-center gap-2 bg-surface rounded-2xl border border-border p-4 active:scale-[0.96] transition-transform"
               >
-                <div
-                  className="w-11 h-11 rounded-full flex items-center justify-center text-white text-xs font-bold"
-                  style={{ backgroundColor: preset.color }}
-                >
-                  {getPresetInitials(preset.name)}
-                </div>
+                <LogoBadge logo={preset.logo} name={preset.name} color={preset.color} size="lg" />
                 <span className="text-xs text-text-primary text-center leading-tight font-medium truncate w-full">
                   {preset.name}
                 </span>

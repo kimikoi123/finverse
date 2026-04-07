@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Plus, TrendingUp } from 'lucide-react';
 import type { Account } from '../types';
 import { formatCurrency, CURRENCIES } from '../utils/currencies';
-import { getInstitution, getInstitutionInitials } from '../utils/institutions';
+import { getInstitution } from '../utils/institutions';
+import LogoBadge from './ui/LogoBadge';
 
 interface WalletTabProps {
   accounts: Account[];
@@ -13,16 +14,6 @@ interface WalletTabProps {
 }
 
 type FilterType = 'all' | 'debit' | 'credit' | 'investments';
-
-function InstitutionBadge({ institution, name }: { institution?: string; name: string }) {
-  const inst = institution ? getInstitution(institution) : null;
-  const initials = getInstitutionInitials(inst?.name ?? name);
-  return (
-    <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center text-[10px] font-bold text-white">
-      {initials}
-    </div>
-  );
-}
 
 const FILTER_OPTIONS: { key: FilterType; label: string }[] = [
   { key: 'all', label: 'All' },
@@ -45,6 +36,7 @@ function filterAccounts(accounts: Account[], filter: FilterType): Account[] {
 }
 
 function DebitCard({ account, onClick }: { account: Account; onClick: () => void }) {
+  const inst = account.institution ? getInstitution(account.institution) : null;
   const typeLabel = account.type === 'ewallet' ? 'E-wallet' : 'Debit';
   return (
     <button
@@ -55,7 +47,7 @@ function DebitCard({ account, onClick }: { account: Account; onClick: () => void
     >
       <div>
         <div className="flex items-center gap-2">
-          <InstitutionBadge institution={account.institution} name={account.name} />
+          <LogoBadge logo={inst?.logo} name={inst?.name ?? account.name} color="rgba(255,255,255,0.2)" size="sm" variant="rounded" />
           <span className="font-semibold text-sm text-white">{account.name}</span>
         </div>
         <p className="text-xs text-white/70 mt-1">
@@ -76,6 +68,7 @@ function DebitCard({ account, onClick }: { account: Account; onClick: () => void
 }
 
 function CreditCard({ account, onClick }: { account: Account; onClick: () => void }) {
+  const inst = account.institution ? getInstitution(account.institution) : null;
   const limit = account.creditLimit ?? 0;
   const usagePercent = limit > 0 ? Math.min((account.balance / limit) * 100, 100) : 0;
   const remaining = Math.max(limit - account.balance, 0);
@@ -90,7 +83,7 @@ function CreditCard({ account, onClick }: { account: Account; onClick: () => voi
     >
       <div>
         <div className="flex items-center gap-2">
-          <InstitutionBadge institution={account.institution} name={account.name} />
+          <LogoBadge logo={inst?.logo} name={inst?.name ?? account.name} color="rgba(255,255,255,0.2)" size="sm" variant="rounded" />
           <span className="font-semibold text-sm text-white flex-1">{account.name}</span>
           <span className="text-white/50 text-sm">...</span>
         </div>

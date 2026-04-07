@@ -33,6 +33,20 @@ export default defineConfig({
               },
             },
           },
+          {
+            urlPattern: /^https:\/\/www\.google\.com\/s2\/favicons\?.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'company-logos',
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 60 * 24 * 30,
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
         ],
       },
     }),

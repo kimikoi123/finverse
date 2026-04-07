@@ -13,8 +13,8 @@ import {
 import type { Account, AccountType } from '../types';
 import { CURRENCIES } from '../utils/currencies';
 import { BANKS, EWALLETS, getInstitution } from '../utils/institutions';
-import { getInstitutionInitials } from '../utils/institutions';
 import { ACCOUNT_COLORS } from '../hooks/useAccounts';
+import LogoBadge from './ui/LogoBadge';
 
 interface AddAccountFlowProps {
   onSave: (data: Omit<Account, 'id' | 'createdAt' | 'sortOrder'>) => void;
@@ -412,12 +412,7 @@ function StepInstitutionGrid({
             onClick={() => onSelect(inst.key)}
             className="flex flex-col items-center gap-2 bg-surface rounded-2xl border border-border p-4 active:scale-[0.96] transition-transform"
           >
-            <div
-              className="w-11 h-11 rounded-full flex items-center justify-center text-white text-xs font-bold"
-              style={{ backgroundColor: inst.color }}
-            >
-              {getInstitutionInitials(inst.shortName ?? inst.name)}
-            </div>
+            <LogoBadge logo={inst.logo} name={inst.shortName ?? inst.name} color={inst.color} size="lg" />
             <span className="text-xs text-text-primary text-center leading-tight font-medium truncate w-full">
               {inst.shortName ?? inst.name}
             </span>

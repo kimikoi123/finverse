@@ -3,8 +3,9 @@ import { ArrowLeft, Plus, Pencil, Trash2, ChevronRight } from 'lucide-react';
 import type { Budget } from '../types';
 import type { BudgetWithSpending } from '../hooks/useBudgets';
 import { formatCurrency } from '../utils/currencies';
-import { getPresetInitials } from '../utils/budgetPresets';
+import { getBudgetPreset } from '../utils/budgetPresets';
 import ConfirmDialog from './ui/ConfirmDialog';
+import LogoBadge from './ui/LogoBadge';
 
 interface BudgetListProps {
   budgets: BudgetWithSpending[];
@@ -35,14 +36,21 @@ function BudgetCard({
   return (
     <div className="bg-surface rounded-2xl border border-white/[0.06] p-4 flex items-start gap-3 hover:bg-surface-hover active:scale-[0.99] transition-all">
       {/* Icon circle */}
-      <div
-        className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-sm font-bold text-white"
-        style={{ backgroundColor: budget.color }}
-      >
-        {budget.type === 'custom'
-          ? getPresetInitials(budget.name)
-          : budget.icon}
-      </div>
+      {budget.type === 'category' ? (
+        <div
+          className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-sm"
+          style={{ backgroundColor: budget.color }}
+        >
+          {budget.icon}
+        </div>
+      ) : (
+        <LogoBadge
+          logo={budget.preset ? getBudgetPreset(budget.preset)?.logo : undefined}
+          name={budget.name}
+          color={budget.color}
+          size="md"
+        />
+      )}
 
       {/* Middle content */}
       <div className="flex-1 min-w-0">

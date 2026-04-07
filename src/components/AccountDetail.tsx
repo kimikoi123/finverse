@@ -2,11 +2,12 @@ import { useState, useMemo } from 'react';
 import { Pencil, Trash2, TrendingUp, Inbox, RefreshCw, ArrowDownLeft, ArrowUpRight } from 'lucide-react';
 import type { Account, Transaction } from '../types';
 import { formatCurrency } from '../utils/currencies';
-import { getInstitution, getInstitutionInitials } from '../utils/institutions';
+import { getInstitution } from '../utils/institutions';
 import { getFinanceCategoryDef } from '../utils/categories';
 import { computeForecast } from '../utils/forecast';
 import AccountCharts from './AccountCharts';
 import ConfirmDialog from './ui/ConfirmDialog';
+import LogoBadge from './ui/LogoBadge';
 
 interface AccountDetailProps {
   account: Account;
@@ -19,16 +20,6 @@ interface AccountDetailProps {
   onUpdatePrice: (price: number) => void;
   onRefreshCryptoPrice: () => void;
   refreshingPrice?: boolean;
-}
-
-function InstitutionBadge({ institution, name }: { institution?: string; name: string }) {
-  const inst = institution ? getInstitution(institution) : null;
-  const initials = getInstitutionInitials(inst?.name ?? name);
-  return (
-    <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold text-white">
-      {initials}
-    </div>
-  );
 }
 
 function getTypeLabel(type: Account['type']): string {
@@ -113,6 +104,8 @@ export default function AccountDetail({
     }
   };
 
+  const inst = account.institution ? getInstitution(account.institution) : null;
+
   return (
     <div className="animate-slide-in-right h-full flex flex-col">
       {/* Header Bar */}
@@ -138,7 +131,7 @@ export default function AccountDetail({
                   <TrendingUp className="w-5 h-5 text-white" />
                 </div>
               ) : (
-                <InstitutionBadge institution={account.institution} name={account.name} />
+                <LogoBadge logo={inst?.logo} name={inst?.name ?? account.name} color="rgba(255,255,255,0.2)" size="md" />
               )}
               <span className="font-semibold text-white">{account.name}</span>
             </div>
