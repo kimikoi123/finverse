@@ -55,7 +55,7 @@ export default function DebtForm({
   return (
     <div className="fixed inset-0 z-50 bg-bg flex flex-col">
       {/* Header bar */}
-      <div className={`flex-shrink-0 ${headerTint}`}>
+      <div className={`flex-shrink-0 ${headerTint}`} style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
         <div className="flex items-center justify-between px-4 py-3">
           <button
             type="button"
