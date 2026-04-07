@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronDown, X } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import { CURRENCIES } from '../utils/currencies';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '../utils/categories';
 import type { FinanceCategoryDef } from '../utils/categories';
@@ -78,19 +78,10 @@ export default function TransactionForm({
     <div className="fixed inset-0 z-50 bg-bg flex flex-col">
       {/* Header bar */}
       <div className={`flex-shrink-0 ${headerTint}`}>
-        <div className="flex items-center justify-between px-4 py-3">
-          <button
-            type="button"
-            onClick={onCancel}
-            aria-label="Close"
-            className="min-w-[44px] min-h-[44px] flex items-center justify-start text-text-secondary active:opacity-60 transition-opacity"
-          >
-            <X size={20} />
-          </button>
+        <div className="flex items-center justify-center px-4 py-3">
           <h1 className="text-base font-semibold text-text-primary">
             {isEditing ? (isExpense ? 'Edit Expense' : 'Edit Income') : (isExpense ? 'Add Expense' : 'Add Income')}
           </h1>
-          <div className="min-w-[44px]" />
         </div>
       </div>
 
@@ -306,18 +297,27 @@ export default function TransactionForm({
         className="flex-shrink-0 px-4 pt-3 pb-3 border-t border-border/30 bg-bg"
         style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.75rem)' }}
       >
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={!canSave}
-          className={`w-full rounded-2xl py-3.5 font-semibold text-sm transition-all ${
-            canSave
-              ? 'bg-primary text-white active:opacity-80'
-              : 'bg-primary/40 text-white/50 cursor-not-allowed'
-          }`}
-        >
-          Save
-        </button>
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="flex-1 rounded-2xl py-3.5 font-semibold text-sm transition-all bg-surface-light text-text-secondary active:opacity-80 border border-border/30"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={!canSave}
+            className={`flex-[2] rounded-2xl py-3.5 font-semibold text-sm transition-all ${
+              canSave
+                ? 'bg-primary text-white active:opacity-80'
+                : 'bg-primary/40 text-white/50 cursor-not-allowed'
+            }`}
+          >
+            Save
+          </button>
+        </div>
       </div>
     </div>
   );
