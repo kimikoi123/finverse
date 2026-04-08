@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import { Sun, Moon, Monitor, Download, Upload } from 'lucide-react';
+import { Sun, Moon, Monitor, Download, Upload, EyeOff } from 'lucide-react';
 import type { UserPreferences, ThemePreference } from '../types';
 import { CURRENCIES } from '../utils/currencies';
 
@@ -11,6 +11,8 @@ interface SettingsProps {
   onExport: () => void;
   onImport: (json: string) => boolean;
   onBack: () => void;
+  privacyMode?: boolean;
+  onTogglePrivacy?: () => void;
 }
 
 const THEME_OPTIONS: { value: ThemePreference; label: string; Icon: typeof Sun }[] = [
@@ -26,6 +28,8 @@ export default function Settings({
   onThemeChange,
   onExport,
   onImport,
+  privacyMode,
+  onTogglePrivacy,
 }: SettingsProps) {
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState(preferences.displayName);
@@ -227,6 +231,31 @@ export default function Settings({
             </div>
           </div>
         </section>
+
+        {/* Privacy Section */}
+        {onTogglePrivacy && (
+          <section>
+            <h2 className="text-[11px] text-text-secondary font-semibold uppercase tracking-wider mb-2 px-1">
+              Privacy
+            </h2>
+            <div className="bg-surface rounded-2xl border border-border overflow-hidden">
+              <button
+                onClick={onTogglePrivacy}
+                className="flex justify-between items-center py-3 px-4 w-full text-left hover:bg-surface-light transition-colors"
+              >
+                <div>
+                  <span className="text-sm text-text-primary">Hide balances</span>
+                  <p className="text-[11px] text-text-secondary/60 mt-0.5">Censor all amounts and balances</p>
+                </div>
+                <div className={`w-11 h-6 rounded-full transition-colors flex items-center ${privacyMode ? 'bg-primary justify-end' : 'bg-border justify-start'}`}>
+                  <div className="w-5 h-5 rounded-full bg-white shadow-sm mx-0.5 flex items-center justify-center">
+                    {privacyMode && <EyeOff size={10} className="text-primary" />}
+                  </div>
+                </div>
+              </button>
+            </div>
+          </section>
+        )}
 
         {/* Data Section */}
         <section>

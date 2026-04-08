@@ -1,5 +1,19 @@
 import type { CurrencyConfig, ExchangeRates } from '../types';
 
+// Module-level privacy flag — initialized from localStorage to prevent flicker
+let _privacyMode = (() => {
+  try { return localStorage.getItem('privacy-mode') === 'true'; }
+  catch { return false; }
+})();
+
+export function setPrivacyMode(enabled: boolean): void {
+  _privacyMode = enabled;
+}
+
+export function isPrivacyMode(): boolean {
+  return _privacyMode;
+}
+
 export const CURRENCIES: Record<string, CurrencyConfig> = {
   USD: { symbol: '$', name: 'US Dollar', rate: 1 },
   EUR: { symbol: '€', name: 'Euro', rate: 0.92 },
@@ -25,6 +39,11 @@ export function convertToBase(amount: number, fromCurrency: string, baseCurrency
 }
 
 export function formatCurrency(amount: number, currencyCode: string): string {
+  if (_privacyMode) return '••••';
+  return formatCurrencyRaw(amount, currencyCode);
+}
+
+export function formatCurrencyRaw(amount: number, currencyCode: string): string {
   const currency = CURRENCIES[currencyCode];
   if (!currency) return `${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 

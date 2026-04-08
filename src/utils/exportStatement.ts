@@ -1,6 +1,6 @@
 import type { Transaction, Account } from '../types';
 import { getFinanceCategoryDef } from './categories';
-import { formatCurrency } from './currencies';
+import { formatCurrencyRaw } from './currencies';
 
 type FilterType = 'all' | 'income' | 'expense';
 
@@ -142,7 +142,7 @@ export async function generatePDF(
       day: 'numeric',
     });
     const sign = t.type === 'expense' ? '-' : '+';
-    const amount = `${sign}${formatCurrency(t.amount, t.currency || options.defaultCurrency)}`;
+    const amount = `${sign}${formatCurrencyRaw(t.amount, t.currency || options.defaultCurrency)}`;
     return [dateStr, t.description, cat.label, amount];
   });
 
@@ -187,9 +187,9 @@ export async function generatePDF(
   doc.setFont('helvetica', 'normal');
   const currency = options.defaultCurrency;
   const lines = [
-    `Total Income:     ${formatCurrency(summary.totalIncome, currency)}`,
-    `Total Expenses:   ${formatCurrency(summary.totalExpenses, currency)}`,
-    `Net:              ${formatCurrency(summary.net, currency)}`,
+    `Total Income:     ${formatCurrencyRaw(summary.totalIncome, currency)}`,
+    `Total Expenses:   ${formatCurrencyRaw(summary.totalExpenses, currency)}`,
+    `Net:              ${formatCurrencyRaw(summary.net, currency)}`,
     `Transactions:     ${summary.count}`,
   ];
   lines.forEach((line, i) => {

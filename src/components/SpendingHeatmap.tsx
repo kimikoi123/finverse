@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Transaction } from '../types';
-import { formatCurrency } from '../utils/currencies';
+import { formatCurrency, isPrivacyMode } from '../utils/currencies';
 
 interface SpendingHeatmapProps {
   transactions: Transaction[];
@@ -175,7 +175,7 @@ export default function SpendingHeatmap({
 
           {/* Day cells */}
           {days.map((day) => {
-            const level = getIntensityLevel(day.total, maxSpending);
+            const level = isPrivacyMode() ? 0 : getIntensityLevel(day.total, maxSpending);
             const isToday = isCurrentMonth && day.iso === todayISO;
             const isSelected = selectedDay === day.day;
             return (

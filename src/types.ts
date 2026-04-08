@@ -136,6 +136,7 @@ export interface UserPreferences {
   paydayDay?: number;        // day of month (1-31)
   paydayAmount?: number;
   paydayCurrency?: string;
+  privacyMode?: boolean;
 }
 
 // Goal types

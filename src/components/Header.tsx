@@ -1,4 +1,4 @@
-import { ArrowLeft, Wallet, Settings } from 'lucide-react';
+import { ArrowLeft, Wallet, Settings, Eye, EyeOff } from 'lucide-react';
 import type { Trip } from '../types';
 
 interface HeaderProps {
@@ -8,9 +8,11 @@ interface HeaderProps {
   showTripNav?: boolean;
   showBackNav?: boolean;
   backLabel?: string;
+  privacyMode?: boolean;
+  onTogglePrivacy?: () => void;
 }
 
-export default function Header({ activeTrip, onBack, onOpenSettings, showTripNav, showBackNav, backLabel }: HeaderProps) {
+export default function Header({ activeTrip, onBack, onOpenSettings, showTripNav, showBackNav, backLabel, privacyMode, onTogglePrivacy }: HeaderProps) {
   return (
     <header
       className="glass sticky top-0 z-40 px-4 py-3 sm:px-6"
@@ -57,6 +59,16 @@ export default function Header({ activeTrip, onBack, onOpenSettings, showTripNav
           )}
         </div>
         <div className="flex items-center gap-0.5">
+          {onTogglePrivacy && (
+            <button
+              onClick={onTogglePrivacy}
+              aria-label={privacyMode ? 'Show balances' : 'Hide balances'}
+              title={privacyMode ? 'Show balances' : 'Hide balances'}
+              className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl border border-transparent hover:border-border hover:bg-surface-light transition-all ${privacyMode ? 'text-primary' : 'text-text-secondary hover:text-text-primary'}`}
+            >
+              {privacyMode ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          )}
           {!showBackNav && !(showTripNav && activeTrip) && (
             <button
               onClick={onOpenSettings}

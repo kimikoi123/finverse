@@ -7,7 +7,7 @@ import ExpenseList from './ExpenseList';
 import Settlement from './Settlement';
 import Analytics from './Analytics';
 import ShareDialog from './ShareDialog';
-import { CURRENCIES, convertToBase } from '../utils/currencies';
+import { CURRENCIES, convertToBase, isPrivacyMode } from '../utils/currencies';
 import { generateShareUrl } from '../utils/sharing';
 import { saveReceiptPhoto, deleteReceiptPhoto } from '../db/storage';
 import type { Trip, Member, Expense, ExchangeRates, RateSource } from '../types';
@@ -163,8 +163,7 @@ export default function TripDashboard({
         </div>
         <div className="col-span-2 sm:col-span-1 bg-gradient-to-br from-primary/8 via-surface to-accent/5 rounded-2xl border border-primary/15 p-4 relative overflow-hidden">
           <p className="text-xl sm:text-2xl font-bold text-accent truncate tracking-tight" style={{ fontVariantNumeric: 'tabular-nums' }} data-heading>
-            {CURRENCIES[trip.baseCurrency]?.symbol}
-            {totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            {isPrivacyMode() ? '••••' : `${CURRENCIES[trip.baseCurrency]?.symbol}${totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           </p>
           <div className="flex items-center gap-2 mt-1">
             <p className="text-[10px] text-text-secondary/50 uppercase tracking-wider font-medium" data-heading>Total ({trip.baseCurrency})</p>

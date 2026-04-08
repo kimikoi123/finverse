@@ -17,7 +17,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { Plus, TrendingUp } from 'lucide-react';
 import type { Account } from '../types';
-import { formatCurrency, CURRENCIES } from '../utils/currencies';
+import { formatCurrency, CURRENCIES, isPrivacyMode } from '../utils/currencies';
 import { getInstitution } from '../utils/institutions';
 import LogoBadge from './ui/LogoBadge';
 
@@ -119,7 +119,7 @@ function CreditCard({ account, onClick }: { account: Account; onClick: () => voi
         <div className="flex justify-between mt-1">
           <span className="text-[10px] text-white/60">{Math.round(usagePercent)}% used</span>
           <span className="text-[10px] text-white/60">
-            {currencySymbol}{remaining.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} left
+            {isPrivacyMode() ? '••••' : `${currencySymbol}${remaining.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} left
           </span>
         </div>
       </div>

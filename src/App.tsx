@@ -4,6 +4,7 @@ import { useExchangeRates } from './hooks/useExchangeRates';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { useToast } from './hooks/useToast';
 import { useTheme } from './hooks/useTheme';
+import { usePrivacyMode } from './hooks/usePrivacyMode';
 import { useTransactions } from './hooks/useTransactions';
 import { useUserPreferences } from './hooks/useUserPreferences';
 import { useAccounts } from './hooks/useAccounts';
@@ -72,6 +73,7 @@ function App() {
   const { isOnline } = useOnlineStatus();
   const { toasts, showToast, undoToast, dismissToast, duration } = useToast();
   const { theme, setTheme } = useTheme();
+  const { privacyMode, togglePrivacyMode } = usePrivacyMode();
   const { transactions, addTransaction, editTransaction, removeTransaction } = useTransactions();
   const { preferences, loading: prefsLoading, updatePreferences } = useUserPreferences();
   const { accounts, netWorth, addAccount, editAccount, removeAccount, reorderAccounts } = useAccounts();
@@ -367,6 +369,8 @@ function App() {
         showTripNav={showTripNav}
         showBackNav={showAccountDetail || showSettings}
         backLabel={showSettings ? 'Settings' : selectedAccount?.name}
+        privacyMode={privacyMode}
+        onTogglePrivacy={togglePrivacyMode}
       />
       {!isOnline && <OfflineBanner />}
       {pendingSharedTrip && (
@@ -389,6 +393,8 @@ function App() {
             onExport={exportData}
             onImport={importData}
             onBack={() => setShowSettings(false)}
+            privacyMode={privacyMode}
+            onTogglePrivacy={togglePrivacyMode}
           />
         )}
         {!showSettings && activeTab === 'home' && (
