@@ -3,6 +3,7 @@ import { ArrowLeft, X, Check, ChevronRight } from 'lucide-react';
 import type { Budget } from '../types';
 import { EXPENSE_CATEGORIES } from '../utils/categories';
 import type { FinanceCategoryDef } from '../utils/categories';
+import { parseAmountInput, isKNotation } from '../utils/amountParser';
 import { BUDGET_PRESETS, getPresetInitials } from '../utils/budgetPresets';
 import type { BudgetPreset } from '../utils/budgetPresets';
 import { ACCOUNT_COLORS } from '../hooks/useAccounts';
@@ -84,7 +85,7 @@ export default function CreateBudgetFlow({
     presets: BUDGET_PRESETS.filter((p) => p.category === cat),
   }));
 
-  const parsedAmount = parseFloat(amount) || 0;
+  const parsedAmount = parseAmountInput(amount);
 
   const canSave = (() => {
     if (parsedAmount <= 0) return false;
@@ -329,17 +330,18 @@ function CategoryBudgetForm({
           Monthly Limit
         </label>
         <input
-          type="number"
+          type="text"
           inputMode="decimal"
-          step="0.01"
-          min="0"
           placeholder="0.00"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
           aria-label="Monthly budget limit"
-          className="w-full bg-surface border border-border rounded-xl py-3 px-4 text-sm text-text-primary placeholder:text-text-secondary/30 focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 transition-all [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+          className="w-full bg-surface border border-border rounded-xl py-3 px-4 text-sm text-text-primary placeholder:text-text-secondary/30 focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 transition-all"
           autoFocus={isEditing}
         />
+        {isKNotation(amount) && (
+          <p className="text-[11px] text-primary/70 mt-1">= {parsedAmount.toLocaleString()}</p>
+        )}
       </div>
 
     </div>
@@ -457,17 +459,18 @@ function CustomBudgetForm({
           Monthly Limit
         </label>
         <input
-          type="number"
+          type="text"
           inputMode="decimal"
-          step="0.01"
-          min="0"
           placeholder="0.00"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
           aria-label="Monthly budget limit"
-          className="w-full bg-surface border border-border rounded-xl py-3 px-4 text-sm text-text-primary placeholder:text-text-secondary/30 focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 transition-all [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+          className="w-full bg-surface border border-border rounded-xl py-3 px-4 text-sm text-text-primary placeholder:text-text-secondary/30 focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 transition-all"
           autoFocus={!isCustomEntry}
         />
+        {isKNotation(amount) && (
+          <p className="text-[11px] text-primary/70 mt-1">= {parsedAmount.toLocaleString()}</p>
+        )}
       </div>
 
       {/* Color picker */}

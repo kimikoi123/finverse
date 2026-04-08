@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { parseAmountInput, isKNotation } from '../utils/amountParser';
 import {
   ArrowLeft,
   X,
@@ -150,13 +151,13 @@ export default function AddAccountFlow({
     if (isStocksOrCrypto) {
       return (
         ticker.trim().length > 0 &&
-        parseFloat(units) > 0 &&
-        parseFloat(pricePerUnit) > 0
+        parseAmountInput(units) > 0 &&
+        parseAmountInput(pricePerUnit) > 0
       );
     }
     // Balance can be 0 or more
-    const bal = parseFloat(balance);
-    return !isNaN(bal) && bal >= 0;
+    const bal = parseAmountInput(balance);
+    return bal >= 0;
   })();
 
   const handleCategorySelect = useCallback(
@@ -215,7 +216,7 @@ export default function AddAccountFlow({
     if (!canSave || !category) return;
 
     const accountType = resolveAccountType(category, selectedInstitution ?? undefined);
-    const parsedBalance = parseFloat(balance) || 0;
+    const parsedBalance = parseAmountInput(balance);
 
     const data: Omit<Account, 'id' | 'createdAt' | 'sortOrder'> = {
       name: name.trim(),
@@ -227,16 +228,16 @@ export default function AddAccountFlow({
     };
 
     if (accountType === 'credit') {
-      const cl = parseFloat(creditLimit);
-      if (!isNaN(cl) && cl > 0) data.creditLimit = cl;
+      const cl = parseAmountInput(creditLimit);
+      if (cl > 0) data.creditLimit = cl;
       const dd = parseInt(dueDay, 10);
       if (!isNaN(dd) && dd >= 1 && dd <= 31) data.dueDay = dd;
     }
 
     if (category === 'stocks' || category === 'crypto') {
       data.ticker = ticker.trim().toUpperCase();
-      data.units = parseFloat(units) || 0;
-      data.pricePerUnit = parseFloat(pricePerUnit) || 0;
+      data.units = parseAmountInput(units);
+      data.pricePerUnit = parseAmountInput(pricePerUnit);
       data.balance = data.units * data.pricePerUnit;
     }
 
@@ -585,15 +586,13 @@ function StepDetailsForm({
             Number of Units
           </label>
           <input
-            type="number"
+            type="text"
             inputMode="decimal"
-            step="any"
-            min="0"
             placeholder="0"
             value={units}
             onChange={(e) => setUnits(e.target.value)}
             aria-label="Number of units"
-            className="w-full bg-surface border border-border rounded-xl py-3 px-4 text-sm text-text-primary placeholder:text-text-secondary/30 focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 transition-all [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+            className="w-full bg-surface border border-border rounded-xl py-3 px-4 text-sm text-text-primary placeholder:text-text-secondary/30 focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 transition-all"
           />
         </div>
       )}
@@ -605,21 +604,19 @@ function StepDetailsForm({
             Price Per Unit
           </label>
           <input
-            type="number"
+            type="text"
             inputMode="decimal"
-            step="any"
-            min="0"
             placeholder="0.00"
             value={pricePerUnit}
             onChange={(e) => setPricePerUnit(e.target.value)}
             aria-label="Price per unit"
-            className="w-full bg-surface border border-border rounded-xl py-3 px-4 text-sm text-text-primary placeholder:text-text-secondary/30 focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 transition-all [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+            className="w-full bg-surface border border-border rounded-xl py-3 px-4 text-sm text-text-primary placeholder:text-text-secondary/30 focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 transition-all"
           />
-          {parseFloat(units) > 0 && parseFloat(pricePerUnit) > 0 && (
+          {parseAmountInput(units) > 0 && parseAmountInput(pricePerUnit) > 0 && (
             <p className="text-xs text-text-secondary mt-2">
               Total value:{' '}
               {CURRENCIES[currency]?.symbol ?? ''}
-              {(parseFloat(units) * parseFloat(pricePerUnit)).toLocaleString(
+              {(parseAmountInput(units) * parseAmountInput(pricePerUnit)).toLocaleString(
                 undefined,
                 { minimumFractionDigits: 2, maximumFractionDigits: 2 }
               )}
@@ -639,16 +636,17 @@ function StepDetailsForm({
               {CURRENCIES[currency]?.symbol ?? ''}
             </span>
             <input
-              type="number"
+              type="text"
               inputMode="decimal"
-              step="0.01"
-              min="0"
               placeholder="0.00"
               value={balance}
               onChange={(e) => setBalance(e.target.value)}
               aria-label="Starting balance"
-              className="flex-1 bg-surface border border-border rounded-xl py-3 px-4 text-sm text-text-primary placeholder:text-text-secondary/30 focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 transition-all [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+              className="flex-1 bg-surface border border-border rounded-xl py-3 px-4 text-sm text-text-primary placeholder:text-text-secondary/30 focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 transition-all"
             />
+            {isKNotation(balance) && (
+              <p className="text-[11px] text-primary/70 mt-1">= {parseAmountInput(balance).toLocaleString()}</p>
+            )}
           </div>
         </div>
       )}
@@ -665,16 +663,17 @@ function StepDetailsForm({
                 {CURRENCIES[currency]?.symbol ?? ''}
               </span>
               <input
-                type="number"
+                type="text"
                 inputMode="decimal"
-                step="0.01"
-                min="0"
                 placeholder="0.00"
                 value={creditLimit}
                 onChange={(e) => setCreditLimit(e.target.value)}
                 aria-label="Credit limit"
-                className="flex-1 bg-surface border border-border rounded-xl py-3 px-4 text-sm text-text-primary placeholder:text-text-secondary/30 focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 transition-all [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                className="flex-1 bg-surface border border-border rounded-xl py-3 px-4 text-sm text-text-primary placeholder:text-text-secondary/30 focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 transition-all"
               />
+              {isKNotation(creditLimit) && (
+                <p className="text-[11px] text-primary/70 mt-1">= {parseAmountInput(creditLimit).toLocaleString()}</p>
+              )}
             </div>
           </div>
           <div>

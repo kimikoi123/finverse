@@ -3,6 +3,7 @@ import { Plus, Check, X, Camera, Trash2 } from 'lucide-react';
 import { CURRENCIES } from '../utils/currencies';
 import { getAllCategories, toSlug } from '../utils/categories';
 import { compressImage } from '../utils/imageUtils';
+import { parseAmountInput, isKNotation } from '../utils/amountParser';
 import { getReceiptPhoto } from '../db/storage';
 import InlineAlert from './ui/InlineAlert';
 import type { Member, Expense, SplitType } from '../types';
@@ -111,7 +112,7 @@ export default function ExpenseForm({ members, baseCurrency, customCategories, o
     e.preventDefault();
     if (!description.trim() || !amount || !paidBy || participants.length === 0) return;
 
-    const parsedAmount = parseFloat(amount);
+    const parsedAmount = parseAmountInput(amount);
 
     const expense: Omit<Expense, 'id' | 'createdAt'> = {
       description: description.trim(),
@@ -204,9 +205,8 @@ export default function ExpenseForm({ members, baseCurrency, customCategories, o
             ))}
           </select>
           <input
-            type="number"
-            step="0.01"
-            min="0"
+            type="text"
+            inputMode="decimal"
             placeholder="Amount"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
@@ -370,7 +370,7 @@ export default function ExpenseForm({ members, baseCurrency, customCategories, o
                   {isSelected && <Check size={12} />}
                   {m.name}
                   {isSelected && amount
-                    ? ` (${CURRENCIES[currency]?.symbol ?? ''}${(parseFloat(amount) / participants.length).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`
+                    ? ` (${CURRENCIES[currency]?.symbol ?? ''}${(parseAmountInput(amount) / participants.length).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`
                     : ''}
                 </button>
               );
@@ -403,7 +403,7 @@ export default function ExpenseForm({ members, baseCurrency, customCategories, o
                 Assigned: {CURRENCIES[currency]?.symbol}
                 {Object.values(customAmounts).reduce((s, v) => s + (v || 0), 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 {' / '}
-                {CURRENCIES[currency]?.symbol}{parseFloat(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {CURRENCIES[currency]?.symbol}{parseAmountInput(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
             )}
           </div>

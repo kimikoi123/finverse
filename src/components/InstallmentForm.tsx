@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import { CURRENCIES } from '../utils/currencies';
+import { parseAmountInput, isKNotation } from '../utils/amountParser';
 import type { Installment, Account } from '../types';
 
 interface InstallmentFormProps {
@@ -48,7 +49,7 @@ export default function InstallmentForm({
   // Auto-calculate monthlyPayment when totalAmount and totalMonths change
   useEffect(() => {
     if (monthlyManuallyEdited.current) return;
-    const total = parseFloat(totalAmount);
+    const total = parseAmountInput(totalAmount);
     const months = parseInt(totalMonths, 10);
     if (total > 0 && months > 0) {
       setMonthlyPayment(String(Math.ceil(total / months)));
@@ -57,7 +58,7 @@ export default function InstallmentForm({
 
   const creditCards = accounts.filter((a) => a.type === 'credit');
 
-  const parsedTotal = parseFloat(totalAmount) || 0;
+  const parsedTotal = parseAmountInput(totalAmount);
   const parsedMonths = parseInt(totalMonths, 10) || 0;
   const canSave = itemName.trim().length > 0 && parsedTotal > 0 && parsedMonths > 0;
 
@@ -66,7 +67,7 @@ export default function InstallmentForm({
     onSave({
       itemName: itemName.trim(),
       totalAmount: parsedTotal,
-      monthlyPayment: parseFloat(monthlyPayment) || 0,
+      monthlyPayment: parseAmountInput(monthlyPayment),
       totalMonths: parsedMonths,
       paidMonths: parseInt(paidMonths, 10) || 0,
       startDate,
@@ -121,16 +122,17 @@ export default function InstallmentForm({
               Total Amount
             </label>
             <input
-              type="number"
+              type="text"
               inputMode="decimal"
-              step="0.01"
-              min="0"
               placeholder="0.00"
               value={totalAmount}
               onChange={(e) => setTotalAmount(e.target.value)}
               aria-label="Total amount"
-              className="w-full bg-surface border border-border rounded-xl py-3 px-4 text-sm text-text-primary placeholder:text-text-secondary/30 focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 transition-all [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+              className="w-full bg-surface border border-border rounded-xl py-3 px-4 text-sm text-text-primary placeholder:text-text-secondary/30 focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 transition-all"
             />
+            {isKNotation(totalAmount) && (
+              <p className="text-[11px] text-primary/70 mt-1">= {parsedTotal.toLocaleString()}</p>
+            )}
           </div>
 
           {/* Number of months */}
@@ -156,10 +158,8 @@ export default function InstallmentForm({
               Monthly Payment
             </label>
             <input
-              type="number"
+              type="text"
               inputMode="decimal"
-              step="0.01"
-              min="0"
               placeholder="Auto-calculated"
               value={monthlyPayment}
               onChange={(e) => {
@@ -167,8 +167,11 @@ export default function InstallmentForm({
                 setMonthlyPayment(e.target.value);
               }}
               aria-label="Monthly payment"
-              className="w-full bg-surface border border-border rounded-xl py-3 px-4 text-sm text-text-primary placeholder:text-text-secondary/30 focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 transition-all [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+              className="w-full bg-surface border border-border rounded-xl py-3 px-4 text-sm text-text-primary placeholder:text-text-secondary/30 focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 transition-all"
             />
+            {isKNotation(monthlyPayment) && (
+              <p className="text-[11px] text-primary/70 mt-1">= {parseAmountInput(monthlyPayment).toLocaleString()}</p>
+            )}
             {!monthlyManuallyEdited.current && parsedTotal > 0 && parsedMonths > 0 && (
               <p className="text-[11px] text-text-tertiary mt-1">
                 Auto-calculated from total / months

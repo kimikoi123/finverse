@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { X, Check } from 'lucide-react';
+import { parseAmountInput, isKNotation } from '../utils/amountParser';
 import type { Goal, Account } from '../types';
 import { ACCOUNT_COLORS } from '../hooks/useAccounts';
 
@@ -36,8 +37,8 @@ export default function GoalForm({
 
   const hasLinkedAccount = linkedAccountId.length > 0;
 
-  const parsedTarget = parseFloat(targetAmount) || 0;
-  const parsedSaved = parseFloat(savedAmount) || 0;
+  const parsedTarget = parseAmountInput(targetAmount);
+  const parsedSaved = parseAmountInput(savedAmount);
 
   const canSave = name.trim().length > 0 && parsedTarget > 0;
 
@@ -113,16 +114,17 @@ export default function GoalForm({
               Target Amount
             </label>
             <input
-              type="number"
+              type="text"
               inputMode="decimal"
-              step="0.01"
-              min="0"
               placeholder="0.00"
               value={targetAmount}
               onChange={(e) => setTargetAmount(e.target.value)}
               aria-label="Target amount"
-              className="w-full bg-surface border border-border rounded-xl py-3 px-4 text-lg text-text-primary placeholder:text-text-secondary/30 focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 transition-all [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+              className="w-full bg-surface border border-border rounded-xl py-3 px-4 text-lg text-text-primary placeholder:text-text-secondary/30 focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 transition-all"
             />
+            {isKNotation(targetAmount) && (
+              <p className="text-[11px] text-primary/70 mt-1">= {parsedTarget.toLocaleString()}</p>
+            )}
           </div>
 
           {/* Saved Amount — only when no linked account */}
@@ -132,16 +134,17 @@ export default function GoalForm({
                 Saved Amount
               </label>
               <input
-                type="number"
+                type="text"
                 inputMode="decimal"
-                step="0.01"
-                min="0"
                 placeholder="0.00"
                 value={savedAmount}
                 onChange={(e) => setSavedAmount(e.target.value)}
                 aria-label="Saved amount"
-                className="w-full bg-surface border border-border rounded-xl py-3 px-4 text-sm text-text-primary placeholder:text-text-secondary/30 focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 transition-all [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                className="w-full bg-surface border border-border rounded-xl py-3 px-4 text-sm text-text-primary placeholder:text-text-secondary/30 focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 transition-all"
               />
+              {isKNotation(savedAmount) && (
+                <p className="text-[11px] text-primary/70 mt-1">= {parsedSaved.toLocaleString()}</p>
+              )}
             </div>
           )}
 

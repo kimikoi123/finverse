@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ChevronDown, X } from 'lucide-react';
 import { CURRENCIES } from '../utils/currencies';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '../utils/categories';
+import { parseAmountInput, isKNotation } from '../utils/amountParser';
 import type { FinanceCategoryDef } from '../utils/categories';
 import type { Account, Budget, Transaction, RecurringFrequency } from '../types';
 
@@ -83,7 +84,7 @@ export default function TransactionForm({
   const [showCurrencyDropdown, setShowCurrencyDropdown] = useState(false);
   const isEditing = !!editingTransaction;
 
-  const parsedAmount = parseFloat(amount) || 0;
+  const parsedAmount = parseAmountInput(amount);
   const canSave = parsedAmount > 0;
 
   const handleSave = () => {
@@ -132,17 +133,18 @@ export default function TransactionForm({
             Amount
           </span>
           <input
-            type="number"
+            type="text"
             inputMode="decimal"
-            step="0.01"
-            min="0"
             placeholder="0.00"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             aria-label="Transaction amount"
-            className="w-full text-4xl font-bold text-text-primary text-center bg-transparent border-none outline-none placeholder:text-text-secondary/30 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+            className="w-full text-4xl font-bold text-text-primary text-center bg-transparent border-none outline-none placeholder:text-text-secondary/30"
             autoFocus
           />
+          {isKNotation(amount) && (
+            <p className="text-[11px] text-primary/70 mt-1">= {parsedAmount.toLocaleString()}</p>
+          )}
 
           {/* Currency selector */}
           <div className="relative mt-4">

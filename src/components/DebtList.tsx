@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ArrowLeft, Plus, Pencil, Trash2, DollarSign } from 'lucide-react';
 import type { DebtEntry } from '../types';
 import { formatCurrency } from '../utils/currencies';
+import { parseAmountInput } from '../utils/amountParser';
 import ConfirmDialog from './ui/ConfirmDialog';
 
 interface DebtListProps {
@@ -52,7 +53,7 @@ function DebtCard({
   const overdue = isOverdue(debt.dueDate);
 
   const handleSubmitPayment = () => {
-    const parsed = parseFloat(paymentAmount);
+    const parsed = parseAmountInput(paymentAmount);
     if (parsed > 0) {
       onRecordPayment(parsed);
       setPaymentAmount('');
@@ -156,22 +157,20 @@ function DebtCard({
       {showPayment && (
         <div className="mt-3 pt-3 border-t border-border flex items-center gap-2">
           <input
-            type="number"
+            type="text"
             inputMode="decimal"
-            step="0.01"
-            min="0"
             placeholder="0.00"
             value={paymentAmount}
             onChange={(e) => setPaymentAmount(e.target.value)}
             aria-label="Payment amount"
-            className="flex-1 bg-surface-light border border-border rounded-xl py-2 px-3 text-sm text-text-primary placeholder:text-text-secondary/30 focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 transition-all [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+            className="flex-1 bg-surface-light border border-border rounded-xl py-2 px-3 text-sm text-text-primary placeholder:text-text-secondary/30 focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 transition-all"
           />
           <button
             type="button"
             onClick={handleSubmitPayment}
-            disabled={!(parseFloat(paymentAmount) > 0)}
+            disabled={!(parseAmountInput(paymentAmount) > 0)}
             className={`px-3 py-2 rounded-xl text-sm font-medium transition-all ${
-              parseFloat(paymentAmount) > 0
+              parseAmountInput(paymentAmount) > 0
                 ? 'bg-primary text-white active:opacity-80'
                 : 'bg-primary/40 text-white/50 cursor-not-allowed'
             }`}

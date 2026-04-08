@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ChevronDown, X } from 'lucide-react';
 import { formatCurrency } from '../utils/currencies';
+import { parseAmountInput, isKNotation } from '../utils/amountParser';
 import type { Account } from '../types';
 
 interface TransferFormProps {
@@ -25,7 +26,7 @@ export default function TransferForm({
   );
 
   const selectedTo = eligibleAccounts.find((a) => a.id === toAccountId);
-  const parsedAmount = parseFloat(amount) || 0;
+  const parsedAmount = parseAmountInput(amount);
   const canSave = parsedAmount > 0 && toAccountId !== '';
 
   const handleSave = () => {
@@ -139,17 +140,18 @@ export default function TransferForm({
             Amount
           </span>
           <input
-            type="number"
+            type="text"
             inputMode="decimal"
-            step="0.01"
-            min="0"
             placeholder="0.00"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             aria-label="Transfer amount"
-            className="w-full text-4xl font-bold text-text-primary text-center bg-transparent border-none outline-none placeholder:text-text-secondary/30 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+            className="w-full text-4xl font-bold text-text-primary text-center bg-transparent border-none outline-none placeholder:text-text-secondary/30"
             autoFocus
           />
+          {isKNotation(amount) && (
+            <p className="text-[11px] text-primary/70 mt-1">= {parsedAmount.toLocaleString()}</p>
+          )}
         </div>
       </div>
 

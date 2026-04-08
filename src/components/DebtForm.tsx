@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ChevronDown, X } from 'lucide-react';
 import { CURRENCIES } from '../utils/currencies';
+import { parseAmountInput, isKNotation } from '../utils/amountParser';
 import type { DebtEntry, DebtDirection } from '../types';
 
 interface DebtFormProps {
@@ -29,8 +30,8 @@ export default function DebtForm({
   const [notes, setNotes] = useState(editingDebt?.notes ?? '');
   const [showCurrencyDropdown, setShowCurrencyDropdown] = useState(false);
 
-  const parsedAmount = parseFloat(amount) || 0;
-  const parsedPaid = parseFloat(paidAmount) || 0;
+  const parsedAmount = parseAmountInput(amount);
+  const parsedPaid = parseAmountInput(paidAmount);
   const canSave = personName.trim().length > 0 && parsedAmount > 0;
 
   const handleSave = () => {
@@ -128,16 +129,17 @@ export default function DebtForm({
               Total Amount
             </label>
             <input
-              type="number"
+              type="text"
               inputMode="decimal"
-              step="0.01"
-              min="0"
               placeholder="0.00"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               aria-label="Total amount"
-              className="w-full bg-surface border border-border rounded-xl py-3 px-4 text-2xl font-bold text-text-primary placeholder:text-text-secondary/30 focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 transition-all [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+              className="w-full bg-surface border border-border rounded-xl py-3 px-4 text-2xl font-bold text-text-primary placeholder:text-text-secondary/30 focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 transition-all"
             />
+            {isKNotation(amount) && (
+              <p className="text-[11px] text-primary/70 mt-1">= {parsedAmount.toLocaleString()}</p>
+            )}
           </div>
 
           {/* Amount paid */}
@@ -146,16 +148,17 @@ export default function DebtForm({
               Amount Paid So Far
             </label>
             <input
-              type="number"
+              type="text"
               inputMode="decimal"
-              step="0.01"
-              min="0"
               placeholder="0"
               value={paidAmount}
               onChange={(e) => setPaidAmount(e.target.value)}
               aria-label="Amount paid so far"
-              className="w-full bg-surface border border-border rounded-xl py-3 px-4 text-sm text-text-primary placeholder:text-text-secondary/30 focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 transition-all [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+              className="w-full bg-surface border border-border rounded-xl py-3 px-4 text-sm text-text-primary placeholder:text-text-secondary/30 focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 transition-all"
             />
+            {isKNotation(paidAmount) && (
+              <p className="text-[11px] text-primary/70 mt-1">= {parsedPaid.toLocaleString()}</p>
+            )}
           </div>
 
           {/* Currency selector */}

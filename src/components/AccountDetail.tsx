@@ -3,6 +3,7 @@ import { Pencil, Trash2, TrendingUp, Inbox, RefreshCw, ArrowDownLeft, ArrowUpRig
 import type { Account, Transaction } from '../types';
 import { formatCurrency } from '../utils/currencies';
 import { getInstitution } from '../utils/institutions';
+import { parseAmountInput } from '../utils/amountParser';
 import { getFinanceCategoryDef } from '../utils/categories';
 import { computeForecast } from '../utils/forecast';
 import AccountCharts from './AccountCharts';
@@ -96,7 +97,7 @@ export default function AccountDetail({
   }, [transactions, account.id, account.balance, showForecast]);
 
   const handlePriceSave = () => {
-    const val = parseFloat(priceInputValue);
+    const val = parseAmountInput(priceInputValue);
     if (val > 0) {
       onUpdatePrice(val);
       setShowPriceInput(false);
