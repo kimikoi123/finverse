@@ -18,12 +18,19 @@ const FREQUENCY_OPTIONS: { value: RecurringFrequency; label: string }[] = [
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
+interface QuickAddData {
+  description: string;
+  amount: number;
+  category: string;
+}
+
 interface TransactionFormProps {
   type: 'income' | 'expense';
   defaultCurrency: string;
   accounts?: Account[];
   customBudgets?: Budget[];
   editingTransaction?: Transaction;
+  quickAddData?: QuickAddData;
   onSave: (txn: {
     type: 'income' | 'expense';
     amount: number;
@@ -50,16 +57,17 @@ export default function TransactionForm({
   accounts,
   customBudgets,
   editingTransaction,
+  quickAddData,
   onSave,
   onCancel,
 }: TransactionFormProps) {
   const categories: FinanceCategoryDef[] =
     type === 'expense' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES;
 
-  const [amount, setAmount] = useState(editingTransaction ? String(editingTransaction.amount) : '');
+  const [amount, setAmount] = useState(editingTransaction ? String(editingTransaction.amount) : quickAddData ? String(quickAddData.amount) : '');
   const [currency, setCurrency] = useState(editingTransaction?.currency ?? defaultCurrency);
-  const [description, setDescription] = useState(editingTransaction?.description ?? '');
-  const [category, setCategory] = useState(editingTransaction?.category ?? categories[0]?.value ?? 'other');
+  const [description, setDescription] = useState(editingTransaction?.description ?? quickAddData?.description ?? '');
+  const [category, setCategory] = useState(editingTransaction?.category ?? quickAddData?.category ?? categories[0]?.value ?? 'other');
   const [date, setDate] = useState(editingTransaction?.date ?? (() => new Date().toISOString().split('T')[0] ?? ''));
   const [accountId, setAccountId] = useState<string | undefined>(editingTransaction?.accountId);
   const [budgetId, setBudgetId] = useState<string | undefined>(editingTransaction?.budgetId);

@@ -28,6 +28,7 @@ import ToastContainer from './components/Toast';
 import UpdatePrompt from './components/UpdatePrompt';
 import TransferForm from './components/TransferForm';
 import { getSharedTripFromUrl } from './utils/sharing';
+import type { ParsedTransaction } from './utils/transactionParser';
 import { fetchCryptoPrice } from './utils/cryptoPrices';
 import { convertToBase } from './utils/currencies';
 import GoalList from './components/GoalList';
@@ -82,6 +83,7 @@ function App() {
   const [activeTab, setActiveTab] = useState<TabId>('home');
   const [showActionMenu, setShowActionMenu] = useState(false);
   const [showTransactionForm, setShowTransactionForm] = useState<{ type: 'income' | 'expense' } | null>(null);
+  const [quickAddData, setQuickAddData] = useState<ParsedTransaction | null>(null);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [showAddAccountFlow, setShowAddAccountFlow] = useState(false);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
@@ -158,7 +160,13 @@ function App() {
       setShowTransactionForm(null);
       showToast(txn.type === 'expense' ? 'Expense added' : 'Income added', () => {});
     }
+    setQuickAddData(null);
   }, [addTransaction, editTransaction, editingTransaction, showToast]);
+
+  const handleQuickAdd = useCallback((parsed: ParsedTransaction) => {
+    setQuickAddData(parsed);
+    setShowTransactionForm({ type: parsed.type });
+  }, []);
 
   const handleEditTransaction = useCallback((txn: Transaction) => {
     setEditingTransaction(txn);
@@ -391,6 +399,7 @@ function App() {
             paydayDay={preferences.paydayDay}
             paydayAmount={preferences.paydayAmount}
             paydayCurrency={preferences.paydayCurrency}
+            onQuickAdd={handleQuickAdd}
           />
         )}
         {!showSettings && activeTab === 'wallet' && (
@@ -548,8 +557,9 @@ function App() {
           accounts={accounts}
           customBudgets={budgetsWithSpending.filter((b) => b.type === 'custom')}
           editingTransaction={editingTransaction ?? undefined}
+          quickAddData={quickAddData ?? undefined}
           onSave={handleSaveTransaction}
-          onCancel={() => { setShowTransactionForm(null); setEditingTransaction(null); }}
+          onCancel={() => { setShowTransactionForm(null); setEditingTransaction(null); setQuickAddData(null); }}
         />
       )}
 

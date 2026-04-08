@@ -4,6 +4,8 @@ import type { Transaction } from '../types';
 import { formatCurrency } from '../utils/currencies';
 import { getFinanceCategoryDef } from '../utils/categories';
 import { getNextRecurringDate } from '../utils/forecast';
+import QuickAddBar from './QuickAddBar';
+import type { ParsedTransaction } from '../utils/transactionParser';
 
 interface HomeDashboardProps {
   displayName: string;
@@ -12,6 +14,7 @@ interface HomeDashboardProps {
   paydayDay?: number;
   paydayAmount?: number;
   paydayCurrency?: string;
+  onQuickAdd?: (parsed: ParsedTransaction) => void;
 }
 
 function getGreeting(): string {
@@ -53,6 +56,7 @@ export default function HomeDashboard({
   paydayDay,
   paydayAmount,
   paydayCurrency,
+  onQuickAdd,
 }: HomeDashboardProps) {
   const [period, setPeriod] = useState<'day' | 'week' | 'month'>('day');
 
@@ -221,6 +225,9 @@ export default function HomeDashboard({
           {getGreeting()}, {displayName}!
         </h1>
       </div>
+
+      {/* Quick Add */}
+      {onQuickAdd && <QuickAddBar onParsed={onQuickAdd} />}
 
       {/* 2. Spending Summary Row */}
       <div className="grid grid-cols-2 gap-3 mb-4">
