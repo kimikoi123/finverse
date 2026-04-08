@@ -10,12 +10,14 @@ import {
   CircleDollarSign,
   Check,
   ChevronDown,
+  ChevronRight,
 } from 'lucide-react';
 import type { Account, AccountType } from '../types';
 import { CURRENCIES } from '../utils/currencies';
 import { BANKS, EWALLETS, getInstitution } from '../utils/institutions';
 import { ACCOUNT_COLORS } from '../hooks/useAccounts';
 import LogoBadge from './ui/LogoBadge';
+import { TEMPLATE_GROUPS, getTemplatesByGroup, type AccountTemplate } from '../utils/accountTemplates';
 
 interface AddAccountFlowProps {
   onSave: (data: Omit<Account, 'id' | 'createdAt' | 'sortOrder'>) => void;
@@ -97,8 +99,8 @@ export default function AddAccountFlow({
   onCancel,
   editingAccount,
 }: AddAccountFlowProps) {
-  // If editing, start at step 3 directly
-  const initialStep = editingAccount ? 3 : 1;
+  // If editing, start at step 4 directly (skip template + type + institution)
+  const initialStep = editingAccount ? 4 : 1;
 
   const [step, setStep] = useState(initialStep);
   const [category, setCategory] = useState<CategoryChoice | null>(() => {
@@ -143,6 +145,7 @@ export default function AddAccountFlow({
       : ''
   );
   const [showCurrencyDropdown, setShowCurrencyDropdown] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
 
   const isStocksOrCrypto = category === 'stocks' || category === 'crypto';
 
@@ -160,18 +163,40 @@ export default function AddAccountFlow({
     return bal >= 0;
   })();
 
+  const handleTemplateSelect = useCallback(
+    (template: AccountTemplate) => {
+      setSelectedTemplate(template.key);
+      // Derive category from template type
+      const catMap: Record<AccountType, CategoryChoice> = {
+        debit: 'bank', credit: 'credit', ewallet: 'bank', stocks: 'stocks', crypto: 'crypto',
+      };
+      setCategory(catMap[template.type]);
+      setSelectedInstitution(template.institutionKey ?? null);
+      setName(template.name);
+      setColor(template.color);
+      setCurrency(template.currency);
+      setStep(4);
+    },
+    []
+  );
+
+  const handleCustomSelect = useCallback(() => {
+    setSelectedTemplate(null);
+    setStep(2);
+  }, []);
+
   const handleCategorySelect = useCallback(
     (cat: CategoryChoice) => {
       setCategory(cat);
       if (needsInstitutionStep(cat)) {
-        setStep(2);
+        setStep(3);
       } else {
         // Skip institution, go to form
         // Pre-fill name defaults
         if (cat === 'cash') setName('Cash');
         if (cat === 'stocks') setName('');
         if (cat === 'crypto') setName('');
-        setStep(3);
+        setStep(4);
       }
     },
     []
@@ -189,28 +214,35 @@ export default function AddAccountFlow({
         // "Other" selected
         setName('');
       }
-      setStep(3);
+      setStep(4);
     },
     []
   );
 
   const handleBack = useCallback(() => {
-    if (step === 3) {
+    if (step === 4) {
       if (editingAccount) {
         onCancel();
         return;
       }
-      if (category && needsInstitutionStep(category)) {
-        setStep(2);
-      } else {
+      if (selectedTemplate) {
+        // Came from template selection — go back to templates
         setStep(1);
+        return;
       }
+      if (category && needsInstitutionStep(category)) {
+        setStep(3);
+      } else {
+        setStep(2);
+      }
+    } else if (step === 3) {
+      setStep(2);
     } else if (step === 2) {
       setStep(1);
     } else {
       onCancel();
     }
-  }, [step, category, editingAccount, onCancel]);
+  }, [step, category, selectedTemplate, editingAccount, onCancel]);
 
   const handleSave = useCallback(() => {
     if (!canSave || !category) return;
@@ -260,7 +292,8 @@ export default function AddAccountFlow({
 
   const stepTitle = (() => {
     if (step === 1) return 'Add Account';
-    if (step === 2) return 'Choose Institution';
+    if (step === 2) return 'Account Type';
+    if (step === 3) return 'Choose Institution';
     if (editingAccount) return 'Edit Account';
     return 'Account Details';
   })();
@@ -288,15 +321,21 @@ export default function AddAccountFlow({
       {/* Content */}
       <div className="flex-1 overflow-y-auto">
         {step === 1 && (
+          <StepTemplateSelection
+            onSelectTemplate={handleTemplateSelect}
+            onSelectCustom={handleCustomSelect}
+          />
+        )}
+        {step === 2 && (
           <StepTypeSelection onSelect={handleCategorySelect} />
         )}
-        {step === 2 && category && (
+        {step === 3 && category && (
           <StepInstitutionGrid
             category={category}
             onSelect={handleInstitutionSelect}
           />
         )}
-        {step === 3 && (
+        {step === 4 && (
           <StepDetailsForm
             category={category}
             isStocksOrCrypto={isStocksOrCrypto}
@@ -325,7 +364,7 @@ export default function AddAccountFlow({
       </div>
 
       {/* Sticky Save Footer */}
-      {step === 3 && (
+      {step === 4 && (
         <div
           className="flex-shrink-0 px-4 pt-3 pb-3 border-t border-border/30 bg-bg"
           style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.75rem)' }}
@@ -348,7 +387,80 @@ export default function AddAccountFlow({
   );
 }
 
-/* ─── Step 1: Type Selection ──────────────────────────────────────── */
+/* ─── Step 1: Template Selection ──────────────────────────────────── */
+
+function StepTemplateSelection({
+  onSelectTemplate,
+  onSelectCustom,
+}: {
+  onSelectTemplate: (template: AccountTemplate) => void;
+  onSelectCustom: () => void;
+}) {
+  return (
+    <div className="px-4 py-6 space-y-6">
+      <p className="text-sm text-text-secondary">
+        Quick-start with a template, or set up manually.
+      </p>
+
+      {TEMPLATE_GROUPS.map((group) => {
+        const templates = getTemplatesByGroup(group.key);
+        if (templates.length === 0) return null;
+        return (
+          <div key={group.key}>
+            <h3 className="text-[11px] text-text-secondary font-semibold uppercase tracking-wider mb-3">
+              {group.label}
+            </h3>
+            <div className="grid grid-cols-3 gap-3">
+              {templates.map((template) => {
+                const inst = template.institutionKey
+                  ? getInstitution(template.institutionKey)
+                  : null;
+                return (
+                  <button
+                    key={template.key}
+                    type="button"
+                    onClick={() => onSelectTemplate(template)}
+                    className="flex flex-col items-center gap-2 bg-surface rounded-2xl border border-border p-4 active:scale-[0.96] transition-transform"
+                  >
+                    <LogoBadge
+                      logo={inst?.logo}
+                      name={inst?.shortName ?? template.name}
+                      color={template.color}
+                      size="lg"
+                    />
+                    <span className="text-xs text-text-primary text-center leading-tight font-medium truncate w-full">
+                      {template.name}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+
+      {/* Custom option */}
+      <button
+        type="button"
+        onClick={onSelectCustom}
+        className="w-full flex items-center gap-4 bg-surface rounded-2xl border border-border p-4 active:scale-[0.98] transition-transform text-left"
+      >
+        <div className="w-11 h-11 rounded-full flex items-center justify-center bg-text-secondary/20 text-text-secondary text-lg font-bold flex-shrink-0">
+          +
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="text-sm font-semibold text-text-primary">Custom</div>
+          <div className="text-xs text-text-secondary mt-0.5">
+            Set up your account manually
+          </div>
+        </div>
+        <ChevronRight size={16} className="text-text-secondary flex-shrink-0" />
+      </button>
+    </div>
+  );
+}
+
+/* ─── Step 2: Type Selection ──────────────────────────────────────── */
 
 function StepTypeSelection({
   onSelect,
@@ -700,7 +812,23 @@ function StepDetailsForm({
         <label className="text-[11px] text-text-secondary font-semibold uppercase tracking-wider mb-3 block">
           Card Color
         </label>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          {/* Show brand color swatch if not in default palette */}
+          {color && !ACCOUNT_COLORS.includes(color) && (
+            <button
+              key={color}
+              type="button"
+              onClick={() => setColor(color)}
+              aria-label={`Select color ${color}`}
+              className="w-9 h-9 rounded-full flex items-center justify-center transition-transform active:scale-90"
+              style={{
+                backgroundColor: color,
+                boxShadow: `0 0 0 3px var(--color-bg), 0 0 0 5px ${color}`,
+              }}
+            >
+              <Check size={16} className="text-white" />
+            </button>
+          )}
           {ACCOUNT_COLORS.map((c) => (
             <button
               key={c}
