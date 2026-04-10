@@ -2,6 +2,7 @@ import { db } from '../db/database';
 import { subscribeMutations } from '../db/storage';
 import type { SyncEntityType } from '../types';
 import { applyRemoteBatch } from './applyRemote';
+import { drainReceiptUploads } from './receiptUploader';
 import {
   clearIdentity,
   getLastPulledAt,
@@ -180,6 +181,10 @@ async function sync(options: { pushOnly?: boolean } = {}): Promise<void> {
     if (!options.pushOnly) {
       await runPull();
     }
+    // Drain any receipts that still need to ship bytes to Vercel Blob.
+    // This happens BEFORE runPush so the fresh blobKey/blobUrl metadata
+    // gets pushed in the same cycle.
+    await drainReceiptUploads();
     await runPush();
     state.update({
       status: 'idle',
@@ -230,7 +235,7 @@ async function runPush(): Promise<void> {
     for (const q of slice) {
       const row = await fetchRow(q.entityType, q.entityId);
       if (!row || typeof row.updatedAt !== 'number') continue;
-      const data = stripSyncFields(row);
+      const data = stripSyncFields(row, q.entityType);
       changes.push({
         entityType: q.entityType,
         entityId: q.entityId,
@@ -309,12 +314,27 @@ async function fetchRow(entityType: SyncEntityType, entityId: string): Promise<R
         return db.installments;
       case 'userPreferences':
         return db.userPreferences;
+      case 'receipt':
+        return db.receiptPhotos;
     }
   })();
   return (await table.get(entityId)) as Record<string, unknown> | undefined;
 }
 
-function stripSyncFields(row: Record<string, unknown>): Record<string, unknown> {
+function stripSyncFields(row: Record<string, unknown>, entityType: SyncEntityType): Record<string, unknown> {
+  // Receipts never ship their `localBase64` field to the server — that
+  // blob can be hundreds of KB and is purely a local cache. Only the
+  // cloud reference (blobKey / blobUrl) needs to travel. Everything else
+  // strips the usual sync metadata and primary-key fields.
+  if (entityType === 'receipt') {
+    const { updatedAt: _u, deletedAt: _d, expenseId: _e, localBase64: _b, data: _legacy, ...rest } = row;
+    void _u;
+    void _d;
+    void _e;
+    void _b;
+    void _legacy;
+    return rest;
+  }
   const { updatedAt: _u, deletedAt: _d, id: _id, ...rest } = row;
   void _u;
   void _d;
@@ -334,6 +354,16 @@ async function enqueueAllLocalRows(): Promise<void> {
       enqueuedAt: now,
     }));
 
+  // Receipts use `expenseId` as their primary key — same queue shape,
+  // just a different field on the row.
+  const receiptRows = await db.receiptPhotos.toArray();
+  const receiptEntries = receiptRows.map((r) => ({
+    id: `receipt:${r.expenseId}`,
+    entityType: 'receipt' as const,
+    entityId: r.expenseId,
+    enqueuedAt: now,
+  }));
+
   const all = [
     ...toQueueEntries('trip', await db.trips.toArray()),
     ...toQueueEntries('transaction', await db.transactions.toArray()),
@@ -343,6 +373,7 @@ async function enqueueAllLocalRows(): Promise<void> {
     ...toQueueEntries('debt', await db.debts.toArray()),
     ...toQueueEntries('installment', await db.installments.toArray()),
     ...toQueueEntries('userPreferences', await db.userPreferences.toArray()),
+    ...receiptEntries,
   ];
 
   if (all.length > 0) {

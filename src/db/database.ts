@@ -16,9 +16,23 @@ interface DeletedTripRecord extends DeletedTrip {
   id: string;
 }
 
+// Receipt rows can be in one of three states during their lifetime:
+//  1. Fresh capture → only `localBase64` set. Sync engine's receipt
+//     uploader will drain it to Vercel Blob on the next cycle.
+//  2. Uploaded → both `localBase64` (still cached locally for instant
+//     display on the device that captured it) AND `blobKey`/`blobUrl`
+//     set. Only the metadata (not the base64) is pushed through the
+//     sync entities table.
+//  3. Pulled on a peer → only `blobKey`/`blobUrl` set (no local cache).
+//     Consumers fall back to fetching the URL as an img src.
 interface ReceiptPhotoRecord {
   expenseId: string;
-  data: string; // base64 data URI
+  data?: string; // legacy field (pre-v11) — kept optional for older rows mid-migration
+  localBase64?: string; // v11+ — instant-display cache + upload source
+  blobKey?: string; // Vercel Blob pathname (vault-scoped)
+  blobUrl?: string; // public CDN URL
+  updatedAt?: number;
+  deletedAt?: number;
 }
 
 // Queue of locally-mutated rows that still need to be pushed to the cloud.
@@ -174,6 +188,36 @@ class SplitTripDB extends Dexie {
       debts: 'id, direction, updatedAt, deletedAt',
       installments: 'id, updatedAt, deletedAt',
       pendingPushes: 'id, enqueuedAt',
+    });
+    // v11: bring receiptPhotos under the sync layer. New fields
+    // (localBase64 / blobKey / blobUrl / updatedAt / deletedAt) require
+    // index updates so the sync engine can range-query by updatedAt.
+    // Migration renames the legacy `data` column to `localBase64` and
+    // stamps `updatedAt`. The receipt uploader takes care of draining
+    // the base64 into Vercel Blob on the next sync cycle.
+    this.version(11).stores({
+      trips: 'id, updatedAt, deletedAt',
+      meta: 'key',
+      rateCache: 'key',
+      deletedTrips: 'id',
+      receiptPhotos: 'expenseId, updatedAt, deletedAt',
+      transactions: 'id, date, type, updatedAt, deletedAt',
+      userPreferences: 'id, updatedAt',
+      accounts: 'id, type, sortOrder, updatedAt, deletedAt',
+      budgets: 'id, type, updatedAt, deletedAt',
+      goals: 'id, updatedAt, deletedAt',
+      debts: 'id, direction, updatedAt, deletedAt',
+      installments: 'id, updatedAt, deletedAt',
+      pendingPushes: 'id, enqueuedAt',
+    }).upgrade(async (tx) => {
+      const now = Date.now();
+      await tx.table('receiptPhotos').toCollection().modify((row: ReceiptPhotoRecord) => {
+        if (row.data && !row.localBase64) {
+          row.localBase64 = row.data;
+          delete row.data;
+        }
+        if (row.updatedAt === undefined) row.updatedAt = now;
+      });
     });
   }
 }

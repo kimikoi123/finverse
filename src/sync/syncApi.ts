@@ -170,3 +170,44 @@ export interface PushResponse {
 export function pushChanges(changes: PushChange[]): Promise<PushResponse> {
   return request<PushResponse>('/api/sync/push', { body: { changes } });
 }
+
+export interface UploadReceiptRequest {
+  base64: string;
+  expenseId: string;
+}
+
+export interface UploadReceiptResponse {
+  key: string;
+  url: string;
+}
+
+export function uploadReceiptBlob(body: UploadReceiptRequest): Promise<UploadReceiptResponse> {
+  return request<UploadReceiptResponse>('/api/blob/upload', { body });
+}
+
+// Fetches a private blob's raw bytes through the authed proxy endpoint
+// and returns a same-origin `blob:` ObjectURL suitable for <img src>.
+// The receipt display cache in storage.ts owns the lifetime — callers
+// must NOT revoke these URLs themselves.
+export async function fetchPrivateBlobAsObjectUrl(key: string): Promise<string> {
+  const identity = getIdentity();
+  if (!identity) throw new SyncUnauthedError();
+  const response = await fetch('/api/blob/fetch', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${bearerToken(identity)}`,
+    },
+    body: JSON.stringify({ key }),
+  });
+  if (response.status === 401) {
+    clearIdentity();
+    window.dispatchEvent(new CustomEvent('finverse:sync-unauthed'));
+    throw new SyncUnauthedError();
+  }
+  if (!response.ok) {
+    throw new SyncHttpError(response.status, `Blob fetch failed (${response.status})`);
+  }
+  const blob = await response.blob();
+  return URL.createObjectURL(blob);
+}

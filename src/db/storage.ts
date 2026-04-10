@@ -1,5 +1,6 @@
 import { db } from './database';
 import { hasIdentity } from '../sync/deviceIdentity';
+import { fetchPrivateBlobAsObjectUrl } from '../sync/syncApi';
 import type { Trip, TripState, DeletedTrip, ExchangeRates, Transaction, UserPreferences, Account, Budget, Goal, DebtEntry, Installment, SyncEntityType } from '../types';
 
 // Sync helpers: every write goes through these so `updatedAt` is always stamped
@@ -146,23 +147,77 @@ export async function saveRateCache(rates: ExchangeRates, timestamp: number): Pr
   await db.rateCache.put({ key: 'rates', rates, timestamp });
 }
 
-// Receipt photo storage
+// Receipt photo storage — consumers still see `string | undefined` for
+// backward compatibility. Under the hood we return `localBase64` when
+// it exists (instant display on the device that captured it) and
+// otherwise lazily fetch the private blob through the server proxy and
+// cache a same-origin ObjectURL for future renders. The cache key is
+// the Vercel Blob pathname (`blobKey`), which is stable per receipt.
+const blobObjectUrlCache = new Map<string, string>();
+
+async function resolveReceiptUrl(record: { localBase64?: string; blobKey?: string; deletedAt?: number } | undefined): Promise<string | undefined> {
+  if (!record || record.deletedAt) return undefined;
+  if (record.localBase64) return record.localBase64;
+  if (!record.blobKey) return undefined;
+  const cached = blobObjectUrlCache.get(record.blobKey);
+  if (cached) return cached;
+  try {
+    const objectUrl = await fetchPrivateBlobAsObjectUrl(record.blobKey);
+    blobObjectUrlCache.set(record.blobKey, objectUrl);
+    return objectUrl;
+  } catch (err) {
+    console.warn(`Could not fetch receipt blob for ${record.blobKey}:`, err);
+    return undefined;
+  }
+}
+
 export async function saveReceiptPhoto(expenseId: string, dataUrl: string): Promise<void> {
-  await db.receiptPhotos.put({ expenseId, data: dataUrl });
+  const existing = await db.receiptPhotos.get(expenseId);
+  const now = Date.now();
+  // Swapping a receipt resets the cloud reference so the uploader picks
+  // up the fresh bytes on the next sync cycle.
+  await db.receiptPhotos.put({
+    expenseId,
+    localBase64: dataUrl,
+    updatedAt: now,
+    deletedAt: undefined,
+    blobKey: existing?.blobKey && existing.localBase64 === dataUrl ? existing.blobKey : undefined,
+    blobUrl: existing?.blobUrl && existing.localBase64 === dataUrl ? existing.blobUrl : undefined,
+  });
+  await enqueuePush('receipt', expenseId);
 }
 
 export async function getReceiptPhoto(expenseId: string): Promise<string | undefined> {
   const record = await db.receiptPhotos.get(expenseId);
-  return record?.data;
+  return resolveReceiptUrl(record);
 }
 
 export async function deleteReceiptPhoto(expenseId: string): Promise<void> {
-  await db.receiptPhotos.delete(expenseId);
+  const existing = await db.receiptPhotos.get(expenseId);
+  if (!existing) return;
+  const now = Date.now();
+  await db.receiptPhotos.put({
+    ...existing,
+    localBase64: undefined, // free the local cache immediately on delete
+    deletedAt: now,
+    updatedAt: now,
+  });
+  await enqueuePush('receipt', expenseId);
 }
 
 export async function getReceiptPhotosForTrip(expenseIds: string[]): Promise<Map<string, string>> {
   const records = await db.receiptPhotos.where('expenseId').anyOf(expenseIds).toArray();
-  return new Map(records.map((r) => [r.expenseId, r.data]));
+  const out = new Map<string, string>();
+  // Resolve in parallel so list views don't serialise a dozen proxy
+  // fetches. The ObjectURL cache inside resolveReceiptUrl dedupes so a
+  // second render is instant.
+  const resolved = await Promise.all(
+    records.map(async (r) => ({ id: r.expenseId, url: await resolveReceiptUrl(r) })),
+  );
+  for (const { id, url } of resolved) {
+    if (url !== undefined) out.set(id, url);
+  }
+  return out;
 }
 
 // User Preferences (singleton — no tombstone path)

@@ -8,7 +8,8 @@ export type SyncEntityType =
   | 'goal'
   | 'debt'
   | 'installment'
-  | 'userPreferences';
+  | 'userPreferences'
+  | 'receipt';
 
 export interface CurrencyConfig {
   symbol: string;

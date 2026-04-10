@@ -10,7 +10,10 @@ import type { PulledEntity } from './syncApi';
 // a higher updatedAt, we skip the remote change (local wins, and the next
 // push will send the newer version back up).
 
-type AnyRow = Record<string, unknown> & { id: string; updatedAt?: number };
+// Most entities use `id` as their primary key; receipts use `expenseId`.
+// Both are strings; we leave the key column unnamed here and let each
+// branch in `applyRemoteEntity` assign the right field.
+type AnyRow = Record<string, unknown> & { updatedAt?: number };
 // Each Dexie table is generically typed (Table<Trip, string>, etc.). We
 // accept the loss of type safety at the sync boundary because remote data
 // is already untyped JSONB — validating the shape is the server's job via
@@ -18,7 +21,8 @@ type AnyRow = Record<string, unknown> & { id: string; updatedAt?: number };
 type GenericTable = Table<AnyRow, string>;
 
 export async function applyRemoteEntity(entity: PulledEntity): Promise<void> {
-  const table = tableFor(entity.entityType as SyncEntityType);
+  const entityType = entity.entityType as SyncEntityType;
+  const table = tableFor(entityType);
   if (!table) {
     console.warn(`applyRemoteEntity: unknown entityType "${entity.entityType}"`);
     return;
@@ -29,6 +33,30 @@ export async function applyRemoteEntity(entity: PulledEntity): Promise<void> {
     // push will send our local version up.
     return;
   }
+  // Receipts use `expenseId` as their primary key, not `id`. Also,
+  // `localBase64` is device-local-only — we preserve whatever the local
+  // row had (so the capturing device keeps its cache) instead of
+  // overwriting it from the remote, which never includes base64.
+  if (entityType === 'receipt') {
+    const row: AnyRow = {
+      ...(entity.data as Record<string, unknown>),
+      expenseId: entity.entityId,
+      updatedAt: entity.updatedAt,
+    };
+    if (existing && 'localBase64' in existing && existing.localBase64) {
+      row.localBase64 = existing.localBase64;
+    }
+    if (entity.deletedAt !== undefined) {
+      row.deletedAt = entity.deletedAt;
+      // Soft-deleted receipts free their local cache too.
+      delete row.localBase64;
+    } else {
+      delete row.deletedAt;
+    }
+    await table.put(row);
+    return;
+  }
+
   const row: AnyRow = {
     ...(entity.data as Record<string, unknown>),
     id: entity.entityId,
@@ -66,6 +94,8 @@ function tableFor(type: SyncEntityType): GenericTable | null {
       return db.installments as unknown as GenericTable;
     case 'userPreferences':
       return db.userPreferences as unknown as GenericTable;
+    case 'receipt':
+      return db.receiptPhotos as unknown as GenericTable;
     default: {
       const exhaustive: never = type;
       void exhaustive;

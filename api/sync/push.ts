@@ -26,6 +26,7 @@ const ALLOWED_TYPES = new Set([
   'debt',
   'installment',
   'userPreferences',
+  'receipt',
 ]);
 
 const MAX_BATCH = 1000;
