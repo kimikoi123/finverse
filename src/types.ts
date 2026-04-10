@@ -35,6 +35,8 @@ export interface Trip {
   expenses: Expense[];
   customCategories?: string[];
   createdAt: string;
+  updatedAt?: number;
+  deletedAt?: number;
 }
 
 export interface Debt {
@@ -87,6 +89,8 @@ export interface Transaction {
   recurringEndDate?: string;    // optional end date
   transferId?: string;      // links paired transfer transactions
   budgetId?: string;
+  updatedAt?: number;
+  deletedAt?: number;
 }
 
 // Account types
@@ -109,6 +113,8 @@ export interface Account {
   notes?: string;
   sortOrder: number;
   createdAt: string;
+  updatedAt?: number;
+  deletedAt?: number;
 }
 
 // Budget types
@@ -123,6 +129,8 @@ export interface Budget {
   color: string;
   preset?: string;
   createdAt: string;
+  updatedAt?: number;
+  deletedAt?: number;
 }
 
 export type ThemePreference = 'light' | 'dark' | 'system';
@@ -137,6 +145,7 @@ export interface UserPreferences {
   paydayAmount?: number;
   paydayCurrency?: string;
   privacyMode?: boolean;
+  updatedAt?: number;
 }
 
 // Goal types
@@ -150,6 +159,8 @@ export interface Goal {
   deadline?: string;
   color: string;
   createdAt: string;
+  updatedAt?: number;
+  deletedAt?: number;
 }
 
 // Debt types
@@ -165,6 +176,8 @@ export interface DebtEntry {
   dueDate?: string;
   notes?: string;
   createdAt: string;
+  updatedAt?: number;
+  deletedAt?: number;
 }
 
 // Installment types
@@ -180,4 +193,6 @@ export interface Installment {
   currency: string;
   notes?: string;
   createdAt: string;
+  updatedAt?: number;
+  deletedAt?: number;
 }

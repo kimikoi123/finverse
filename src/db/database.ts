@@ -113,6 +113,38 @@ class SplitTripDB extends Dexie {
       debts: 'id, direction',
       installments: 'id',
     });
+    // v9: add sync metadata (updatedAt, deletedAt) to all syncable entities.
+    // Index `updatedAt` so the sync engine can range-query rows changed since a timestamp.
+    // Index `deletedAt` so read queries can cheaply filter tombstones.
+    this.version(9).stores({
+      trips: 'id, updatedAt, deletedAt',
+      meta: 'key',
+      rateCache: 'key',
+      deletedTrips: 'id',
+      receiptPhotos: 'expenseId',
+      transactions: 'id, date, type, updatedAt, deletedAt',
+      userPreferences: 'id, updatedAt',
+      accounts: 'id, type, sortOrder, updatedAt, deletedAt',
+      budgets: 'id, type, updatedAt, deletedAt',
+      goals: 'id, updatedAt, deletedAt',
+      debts: 'id, direction, updatedAt, deletedAt',
+      installments: 'id, updatedAt, deletedAt',
+    }).upgrade(async (tx) => {
+      const now = Date.now();
+      const stamp = async (tableName: string) => {
+        await tx.table(tableName).toCollection().modify((row: { updatedAt?: number }) => {
+          if (row.updatedAt === undefined) row.updatedAt = now;
+        });
+      };
+      await stamp('trips');
+      await stamp('transactions');
+      await stamp('userPreferences');
+      await stamp('accounts');
+      await stamp('budgets');
+      await stamp('goals');
+      await stamp('debts');
+      await stamp('installments');
+    });
   }
 }
 

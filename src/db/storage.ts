@@ -1,17 +1,47 @@
 import { db } from './database';
 import type { Trip, TripState, DeletedTrip, ExchangeRates, Transaction, UserPreferences, Account, Budget, Goal, DebtEntry, Installment } from '../types';
 
+// Sync helpers: every write goes through these so `updatedAt` is always stamped
+// and deletes become tombstones instead of hard removals. The sync engine (Phase 3)
+// relies on these invariants to build delta diffs.
+const stampWrite = <T extends { updatedAt?: number }>(obj: T): T => ({
+  ...obj,
+  updatedAt: Date.now(),
+});
+
+const stampUpdate = <T extends object>(updates: T): T & { updatedAt: number } => ({
+  ...updates,
+  updatedAt: Date.now(),
+});
+
+const tombstoneUpdate = (): { deletedAt: number; updatedAt: number } => {
+  const now = Date.now();
+  return { deletedAt: now, updatedAt: now };
+};
+
 export async function loadState(): Promise<TripState> {
-  const trips = await db.trips.toArray();
+  const all = await db.trips.toArray();
+  const trips = all.filter((t) => !t.deletedAt);
   const meta = await db.meta.get('activeTripId');
   return { trips, activeTripId: meta?.value ?? null };
 }
 
 export async function saveState(state: TripState): Promise<void> {
+  const now = Date.now();
   await db.transaction('rw', db.trips, db.meta, async () => {
-    await db.trips.clear();
-    if (state.trips.length > 0) {
-      await db.trips.bulkPut(state.trips);
+    const existing = await db.trips.toArray();
+    const newIds = new Set(state.trips.map((t) => t.id));
+    const toSoftDelete = existing.filter((t) => !newIds.has(t.id) && !t.deletedAt);
+    const toPut: Trip[] = state.trips.map((t) => {
+      const copy: Trip = { ...t, updatedAt: now };
+      if ('deletedAt' in copy) delete copy.deletedAt;
+      return copy;
+    });
+    if (toPut.length > 0) {
+      await db.trips.bulkPut(toPut);
+    }
+    for (const trip of toSoftDelete) {
+      await db.trips.update(trip.id, { deletedAt: now, updatedAt: now });
     }
     await db.meta.put({ key: 'activeTripId', value: state.activeTripId });
   });
@@ -75,116 +105,124 @@ export async function getReceiptPhotosForTrip(expenseIds: string[]): Promise<Map
   return new Map(records.map((r) => [r.expenseId, r.data]));
 }
 
-// User Preferences
+// User Preferences (singleton — no tombstone path)
 export async function loadUserPreferences(): Promise<UserPreferences | null> {
   return (await db.userPreferences.get('default')) ?? null;
 }
 
 export async function saveUserPreferences(prefs: UserPreferences): Promise<void> {
-  await db.userPreferences.put({ ...prefs, id: 'default' });
+  await db.userPreferences.put(stampWrite({ ...prefs, id: 'default' }));
 }
 
 // Transactions
 export async function addTransaction(txn: Transaction): Promise<void> {
-  await db.transactions.put(txn);
+  await db.transactions.put(stampWrite(txn));
 }
 
 export async function getTransactions(): Promise<Transaction[]> {
-  return db.transactions.orderBy('date').reverse().toArray();
+  const all = await db.transactions.orderBy('date').reverse().toArray();
+  return all.filter((t) => !t.deletedAt);
 }
 
 export async function getTransactionsByDateRange(startDate: string, endDate: string): Promise<Transaction[]> {
-  return db.transactions.where('date').between(startDate, endDate, true, true).reverse().toArray();
+  const all = await db.transactions.where('date').between(startDate, endDate, true, true).reverse().toArray();
+  return all.filter((t) => !t.deletedAt);
 }
 
 export async function updateTransaction(id: string, updates: Partial<Transaction>): Promise<void> {
-  await db.transactions.update(id, updates);
+  await db.transactions.update(id, stampUpdate(updates));
 }
 
 export async function deleteTransaction(id: string): Promise<void> {
-  await db.transactions.delete(id);
+  await db.transactions.update(id, tombstoneUpdate());
 }
 
 // Accounts
 export async function loadAccounts(): Promise<Account[]> {
-  return db.accounts.orderBy('sortOrder').toArray();
+  const all = await db.accounts.orderBy('sortOrder').toArray();
+  return all.filter((a) => !a.deletedAt);
 }
 
 export async function addAccount(account: Account): Promise<void> {
-  await db.accounts.put(account);
+  await db.accounts.put(stampWrite(account));
 }
 
 export async function updateAccount(id: string, updates: Partial<Account>): Promise<void> {
-  await db.accounts.update(id, updates);
+  await db.accounts.update(id, stampUpdate(updates));
 }
 
 export async function deleteAccount(id: string): Promise<void> {
-  await db.accounts.delete(id);
+  await db.accounts.update(id, tombstoneUpdate());
 }
 
 export async function batchUpdateSortOrder(updates: { id: string; sortOrder: number }[]): Promise<void> {
+  const now = Date.now();
   await db.transaction('rw', db.accounts, async () => {
     for (const { id, sortOrder } of updates) {
-      await db.accounts.update(id, { sortOrder });
+      await db.accounts.update(id, { sortOrder, updatedAt: now });
     }
   });
 }
 
 // Budgets
 export async function loadBudgets(): Promise<Budget[]> {
-  return db.budgets.toArray();
+  const all = await db.budgets.toArray();
+  return all.filter((b) => !b.deletedAt);
 }
 
 export async function addBudget(budget: Budget): Promise<void> {
-  await db.budgets.put(budget);
+  await db.budgets.put(stampWrite(budget));
 }
 
 export async function updateBudget(id: string, updates: Partial<Budget>): Promise<void> {
-  await db.budgets.update(id, updates);
+  await db.budgets.update(id, stampUpdate(updates));
 }
 
 export async function deleteBudget(id: string): Promise<void> {
-  await db.budgets.delete(id);
+  await db.budgets.update(id, tombstoneUpdate());
 }
 
 // Goals
 export async function loadGoals(): Promise<Goal[]> {
-  return db.goals.toArray();
+  const all = await db.goals.toArray();
+  return all.filter((g) => !g.deletedAt);
 }
 export async function addGoal(goal: Goal): Promise<void> {
-  await db.goals.put(goal);
+  await db.goals.put(stampWrite(goal));
 }
 export async function updateGoal(id: string, updates: Partial<Goal>): Promise<void> {
-  await db.goals.update(id, updates);
+  await db.goals.update(id, stampUpdate(updates));
 }
 export async function deleteGoal(id: string): Promise<void> {
-  await db.goals.delete(id);
+  await db.goals.update(id, tombstoneUpdate());
 }
 
 // Debts
 export async function loadDebts(): Promise<DebtEntry[]> {
-  return db.debts.toArray();
+  const all = await db.debts.toArray();
+  return all.filter((d) => !d.deletedAt);
 }
 export async function addDebt(debt: DebtEntry): Promise<void> {
-  await db.debts.put(debt);
+  await db.debts.put(stampWrite(debt));
 }
 export async function updateDebt(id: string, updates: Partial<DebtEntry>): Promise<void> {
-  await db.debts.update(id, updates);
+  await db.debts.update(id, stampUpdate(updates));
 }
 export async function deleteDebt(id: string): Promise<void> {
-  await db.debts.delete(id);
+  await db.debts.update(id, tombstoneUpdate());
 }
 
 // Installments
 export async function loadInstallments(): Promise<Installment[]> {
-  return db.installments.toArray();
+  const all = await db.installments.toArray();
+  return all.filter((i) => !i.deletedAt);
 }
 export async function addInstallment(inst: Installment): Promise<void> {
-  await db.installments.put(inst);
+  await db.installments.put(stampWrite(inst));
 }
 export async function updateInstallment(id: string, updates: Partial<Installment>): Promise<void> {
-  await db.installments.update(id, updates);
+  await db.installments.update(id, stampUpdate(updates));
 }
 export async function deleteInstallment(id: string): Promise<void> {
-  await db.installments.delete(id);
+  await db.installments.update(id, tombstoneUpdate());
 }
