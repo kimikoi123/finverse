@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { requireAuth } from '../_lib/auth';
-import { getSql } from '../_lib/db';
-import { generatePairToken } from '../_lib/hash';
-import { handleError, methodNotAllowed, sendJson } from '../_lib/http';
+import { requireAuth } from '../_lib/auth.js';
+import { getSql } from '../_lib/db.js';
+import { generatePairToken } from '../_lib/hash.js';
+import { handleError, methodNotAllowed, sendJson } from '../_lib/http.js';
 
 const TOKEN_TTL_MS = 10 * 60 * 1000; // 10 minutes
 const MAX_ATTEMPTS = 5;

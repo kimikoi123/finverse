@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { get } from '@vercel/blob';
-import { requireAuth } from '../_lib/auth';
-import { handleError, HttpError, methodNotAllowed, readJson } from '../_lib/http';
+import { requireAuth } from '../_lib/auth.js';
+import { handleError, HttpError, methodNotAllowed, readJson } from '../_lib/http.js';
 
 interface FetchBody {
   key?: string;

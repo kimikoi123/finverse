@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { requireAuth } from '../_lib/auth';
-import { getSql } from '../_lib/db';
-import { handleError, HttpError, methodNotAllowed, readJson, sendJson } from '../_lib/http';
+import { requireAuth } from '../_lib/auth.js';
+import { getSql } from '../_lib/db.js';
+import { handleError, HttpError, methodNotAllowed, readJson, sendJson } from '../_lib/http.js';
 
 interface PushChange {
   entityType?: string;

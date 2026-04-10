@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { put } from '@vercel/blob';
-import { requireAuth } from '../_lib/auth';
-import { handleError, HttpError, methodNotAllowed, readJson, sendJson } from '../_lib/http';
+import { requireAuth } from '../_lib/auth.js';
+import { handleError, HttpError, methodNotAllowed, readJson, sendJson } from '../_lib/http.js';
 
 interface UploadBody {
   base64?: string;

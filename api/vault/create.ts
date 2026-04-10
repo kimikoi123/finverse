@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { randomUUID } from 'node:crypto';
-import { getSql } from '../_lib/db';
-import { generateDeviceKey, hashDeviceKey } from '../_lib/hash';
-import { handleError, methodNotAllowed, readJson, sendJson } from '../_lib/http';
+import { getSql } from '../_lib/db.js';
+import { generateDeviceKey, hashDeviceKey } from '../_lib/hash.js';
+import { handleError, methodNotAllowed, readJson, sendJson } from '../_lib/http.js';
 
 interface CreateBody {
   deviceLabel?: string;
