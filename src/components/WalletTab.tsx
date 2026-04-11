@@ -339,7 +339,7 @@ export default function WalletTab({
           items={filtered.map((a) => a.id)}
           strategy={rectSortingStrategy}
         >
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             {filtered.map((account) => (
               <SortableAccountCard
                 key={account.id}
