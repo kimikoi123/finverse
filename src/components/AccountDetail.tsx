@@ -3,6 +3,7 @@ import { Pencil, Trash2, TrendingUp, Inbox, RefreshCw, ArrowDownLeft, ArrowUpRig
 import type { Account, Transaction } from '../types';
 import { formatCurrency } from '../utils/currencies';
 import { getInstitution } from '../utils/institutions';
+import { buildCardBackground, CARD_INSET_SHADOW } from '../utils/accountColors';
 import { parseAmountInput } from '../utils/amountParser';
 import { getFinanceCategoryDef } from '../utils/categories';
 import { computeForecast } from '../utils/forecast';
@@ -124,7 +125,10 @@ export default function AccountDetail({
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto pb-8">
         {/* Account Card Hero */}
-        <div className="rounded-2xl p-6 mx-4 mt-4" style={{ backgroundColor: account.color }}>
+        <div
+          className="rounded-2xl p-6 mx-4 mt-4"
+          style={{ background: buildCardBackground(account), boxShadow: CARD_INSET_SHADOW }}
+        >
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
               {isInvestment ? (

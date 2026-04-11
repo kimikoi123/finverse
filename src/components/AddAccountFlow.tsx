@@ -13,10 +13,11 @@ import {
   ChevronDown,
   ChevronRight,
 } from 'lucide-react';
-import type { Account, AccountType } from '../types';
+import type { Account, AccountGradient, AccountType } from '../types';
 import { CURRENCIES } from '../utils/currencies';
 import { BANKS, EWALLETS, getInstitution } from '../utils/institutions';
-import { ACCOUNT_COLORS } from '../hooks/useAccounts';
+import { ACCOUNT_GRADIENTS, DEFAULT_GRADIENT, type GradientPreset } from '../hooks/useAccounts';
+import { buildCardBackground, CARD_INSET_SHADOW, gradientToCss } from '../utils/accountColors';
 import LogoBadge from './ui/LogoBadge';
 import { TEMPLATE_GROUPS, getTemplatesByGroup, type AccountTemplate } from '../utils/accountTemplates';
 
@@ -128,7 +129,10 @@ export default function AddAccountFlow({
     editingAccount ? String(editingAccount.balance) : ''
   );
   const [color, setColor] = useState(
-    () => editingAccount?.color ?? ACCOUNT_COLORS[0] ?? '#2d6a4f'
+    () => editingAccount?.color ?? DEFAULT_GRADIENT.from
+  );
+  const [gradient, setGradient] = useState<AccountGradient | undefined>(
+    () => editingAccount?.gradient ?? (editingAccount ? undefined : DEFAULT_GRADIENT)
   );
   const [creditLimit, setCreditLimit] = useState(() =>
     editingAccount?.creditLimit != null
@@ -177,6 +181,9 @@ export default function AddAccountFlow({
       setSelectedInstitution(template.institutionKey ?? null);
       setName(template.name);
       setColor(template.color);
+      // Templates specify a solid color; clear any picked gradient so
+      // buildCardBackground derives a matching diagonal from it.
+      setGradient(undefined);
       setCurrency(template.currency);
       setStep(4);
     },
@@ -260,6 +267,7 @@ export default function AddAccountFlow({
       currency,
       balance: parsedBalance,
       color,
+      gradient,
     };
 
     if (accountType === 'credit') {
@@ -285,6 +293,7 @@ export default function AddAccountFlow({
     currency,
     balance,
     color,
+    gradient,
     creditLimit,
     dueDay,
     ticker,
@@ -352,6 +361,8 @@ export default function AddAccountFlow({
             setBalance={setBalance}
             color={color}
             setColor={setColor}
+            gradient={gradient}
+            setGradient={setGradient}
             creditLimit={creditLimit}
             setCreditLimit={setCreditLimit}
             dueDay={dueDay}
@@ -567,6 +578,8 @@ interface StepDetailsFormProps {
   setBalance: (v: string) => void;
   color: string;
   setColor: (v: string) => void;
+  gradient: AccountGradient | undefined;
+  setGradient: (v: AccountGradient | undefined) => void;
   creditLimit: string;
   setCreditLimit: (v: string) => void;
   dueDay: string;
@@ -592,6 +605,8 @@ function StepDetailsForm({
   setBalance,
   color,
   setColor,
+  gradient,
+  setGradient,
   creditLimit,
   setCreditLimit,
   dueDay,
@@ -603,6 +618,10 @@ function StepDetailsForm({
   pricePerUnit,
   setPricePerUnit,
 }: StepDetailsFormProps) {
+  const handlePickPreset = (preset: GradientPreset) => {
+    setGradient({ id: preset.id, from: preset.from, to: preset.to, angle: preset.angle });
+    setColor(preset.from);
+  };
   return (
     <div className="px-4 py-6 space-y-6 pb-4">
       {/* Account Name */}
@@ -810,44 +829,66 @@ function StepDetailsForm({
         </>
       )}
 
-      {/* Card Color */}
+      {/* Card Style */}
       <div>
         <label className="text-[11px] text-text-secondary font-semibold uppercase tracking-wider mb-3 block">
-          Card Color
+          Card Style
         </label>
-        <div className="flex items-center gap-3 flex-wrap">
-          {/* Show brand color swatch if not in default palette */}
-          {color && !ACCOUNT_COLORS.includes(color) && (
-            <button
-              key={color}
-              type="button"
-              onClick={() => setColor(color)}
-              aria-label={`Select color ${color}`}
-              className="w-9 h-9 rounded-full flex items-center justify-center transition-transform active:scale-90"
-              style={{
-                backgroundColor: color,
-                boxShadow: `0 0 0 3px var(--color-bg), 0 0 0 5px ${color}`,
-              }}
-            >
-              <Check size={16} className="text-white" />
-            </button>
-          )}
-          {ACCOUNT_COLORS.map((c) => (
-            <button
-              key={c}
-              type="button"
-              onClick={() => setColor(c)}
-              aria-label={`Select color ${c}`}
-              className="w-9 h-9 rounded-full flex items-center justify-center transition-transform active:scale-90"
-              style={{
-                backgroundColor: c,
-                boxShadow:
-                  color === c ? `0 0 0 3px var(--color-bg), 0 0 0 5px ${c}` : 'none',
-              }}
-            >
-              {color === c && <Check size={16} className="text-white" />}
-            </button>
-          ))}
+
+        {/* Live preview */}
+        <div
+          className="rounded-2xl p-4 min-h-[120px] flex flex-col justify-between mb-4"
+          style={{
+            background: buildCardBackground({ color, gradient }),
+            boxShadow: CARD_INSET_SHADOW,
+          }}
+        >
+          <div>
+            <p className="text-[10px] text-white/70 uppercase tracking-wider">Preview</p>
+            <p className="text-sm font-semibold text-white mt-0.5">
+              {name.trim() || 'Account name'}
+            </p>
+          </div>
+          <div>
+            <p className="text-[10px] text-white/60 uppercase">Balance</p>
+            <p className="text-lg font-bold text-white">
+              {CURRENCIES[currency]?.symbol ?? ''}
+              {isStocksOrCrypto
+                ? (parseAmountInput(units) * parseAmountInput(pricePerUnit)).toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })
+                : (parseAmountInput(balance) || 0).toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+            </p>
+          </div>
+        </div>
+
+        {/* Gradient grid */}
+        <div className="grid grid-cols-4 gap-3">
+          {ACCOUNT_GRADIENTS.map((preset) => {
+            const selected = gradient?.id === preset.id;
+            return (
+              <button
+                key={preset.id}
+                type="button"
+                onClick={() => handlePickPreset(preset)}
+                aria-label={`Select ${preset.label} gradient`}
+                aria-pressed={selected}
+                className="relative aspect-square rounded-xl flex items-center justify-center transition-transform active:scale-95"
+                style={{
+                  background: gradientToCss(preset),
+                  boxShadow: selected
+                    ? `${CARD_INSET_SHADOW}, 0 0 0 2px var(--color-bg), 0 0 0 4px ${preset.to}`
+                    : CARD_INSET_SHADOW,
+                }}
+              >
+                {selected && <Check size={18} className="text-white drop-shadow" />}
+              </button>
+            );
+          })}
         </div>
       </div>
 

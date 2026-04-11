@@ -109,6 +109,13 @@ export interface Transaction {
 // Account types
 export type AccountType = 'debit' | 'credit' | 'ewallet' | 'stocks' | 'crypto';
 
+export interface AccountGradient {
+  id: string;
+  from: string;
+  to: string;
+  angle?: number;
+}
+
 export interface Account {
   id: string;
   name: string;
@@ -117,6 +124,7 @@ export interface Account {
   currency: string;
   balance: number;
   color: string;
+  gradient?: AccountGradient;
   creditLimit?: number;
   dueDay?: number;
   ticker?: string;

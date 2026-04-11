@@ -19,6 +19,7 @@ import { Plus, TrendingUp } from 'lucide-react';
 import type { Account } from '../types';
 import { formatCurrency, CURRENCIES, isPrivacyMode } from '../utils/currencies';
 import { getInstitution } from '../utils/institutions';
+import { buildCardBackground, CARD_INSET_SHADOW } from '../utils/accountColors';
 import LogoBadge from './ui/LogoBadge';
 
 interface WalletTabProps {
@@ -60,7 +61,7 @@ function DebitCard({ account, onClick }: { account: Account; onClick: () => void
       type="button"
       onClick={onClick}
       className="rounded-2xl p-4 min-h-[140px] h-full w-full flex flex-col justify-between text-left hover:brightness-110 active:scale-[0.98] transition-all"
-      style={{ backgroundColor: account.color }}
+      style={{ background: buildCardBackground(account), boxShadow: CARD_INSET_SHADOW }}
     >
       <div>
         <div className="flex items-center gap-2">
@@ -96,7 +97,7 @@ function CreditCard({ account, onClick }: { account: Account; onClick: () => voi
       type="button"
       onClick={onClick}
       className="rounded-2xl p-4 min-h-[140px] h-full w-full flex flex-col justify-between text-left hover:brightness-110 active:scale-[0.98] transition-all"
-      style={{ backgroundColor: account.color }}
+      style={{ background: buildCardBackground(account), boxShadow: CARD_INSET_SHADOW }}
     >
       <div>
         <div className="flex items-center gap-2">
@@ -144,7 +145,7 @@ function InvestmentCard({ account, onClick }: { account: Account; onClick: () =>
       type="button"
       onClick={onClick}
       className="rounded-2xl p-4 min-h-[140px] h-full w-full flex flex-col justify-between text-left hover:brightness-110 active:scale-[0.98] transition-all"
-      style={{ backgroundColor: account.color }}
+      style={{ background: buildCardBackground(account), boxShadow: CARD_INSET_SHADOW }}
     >
       <div>
         <div className="flex items-center gap-2">
