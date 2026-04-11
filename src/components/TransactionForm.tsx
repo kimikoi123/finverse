@@ -149,6 +149,7 @@ export default function TransactionForm({
 
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto">
+        <div className="max-w-2xl mx-auto w-full">
         {/* Amount section */}
         <div className="flex flex-col items-center py-8 px-4">
           <span className="text-[10px] font-semibold uppercase tracking-widest text-text-secondary mb-3">
@@ -528,6 +529,7 @@ export default function TransactionForm({
             </div>
           )}
         </div>
+        </div>
       </div>
 
       {/* Sticky Save Footer */}
@@ -535,34 +537,36 @@ export default function TransactionForm({
         className="flex-shrink-0 px-4 pt-3 pb-3 border-t border-border/30 bg-bg"
         style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.75rem)' }}
       >
-        {validationError && (
-          <div className="mb-3">
-            <InlineAlert
-              message={validationError}
-              onDismiss={dismissValidation}
-              autoDismissMs={5000}
-            />
+        <div className="max-w-2xl mx-auto w-full">
+          {validationError && (
+            <div className="mb-3">
+              <InlineAlert
+                message={validationError}
+                onDismiss={dismissValidation}
+                autoDismissMs={5000}
+              />
+            </div>
+          )}
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="flex-1 rounded-2xl py-3.5 font-semibold text-sm transition-all bg-surface-light text-text-secondary active:opacity-80 border border-border/30"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleSave}
+              className={`flex-[2] rounded-2xl py-3.5 font-semibold text-sm transition-all ${
+                parsedAmount > 0
+                  ? 'bg-primary text-white active:opacity-80'
+                  : 'bg-primary/60 text-white active:opacity-80'
+              }`}
+            >
+              Save
+            </button>
           </div>
-        )}
-        <div className="flex gap-3">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="flex-1 rounded-2xl py-3.5 font-semibold text-sm transition-all bg-surface-light text-text-secondary active:opacity-80 border border-border/30"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={handleSave}
-            className={`flex-[2] rounded-2xl py-3.5 font-semibold text-sm transition-all ${
-              parsedAmount > 0
-                ? 'bg-primary text-white active:opacity-80'
-                : 'bg-primary/60 text-white active:opacity-80'
-            }`}
-          >
-            Save
-          </button>
         </div>
       </div>
     </div>
