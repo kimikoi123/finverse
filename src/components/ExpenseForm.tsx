@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Plus, Check, X } from 'lucide-react';
 import { CURRENCIES } from '../utils/currencies';
 import { getAllCategories, toSlug } from '../utils/categories';
-import { parseAmountInput } from '../utils/amountParser';
+import { parseAmountInput, validateAmountInput, amountErrorMessage } from '../utils/amountParser';
 import { getReceiptPhoto } from '../db/storage';
 import InlineAlert from './ui/InlineAlert';
 import ReceiptScanner from './ReceiptScanner';
@@ -103,7 +103,24 @@ export default function ExpenseForm({ members, baseCurrency, customCategories, o
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!description.trim() || !amount || !paidBy || participants.length === 0) return;
+    if (!description.trim()) {
+      setValidationError('Please enter a description.');
+      return;
+    }
+    if (!paidBy) {
+      setValidationError('Please select who paid.');
+      return;
+    }
+    if (participants.length === 0) {
+      setValidationError('Select at least one participant.');
+      return;
+    }
+
+    const amountResult = validateAmountInput(amount);
+    if (!amountResult.ok) {
+      setValidationError(amountErrorMessage(amountResult.reason));
+      return;
+    }
 
     const parsedAmount = parseAmountInput(amount);
 

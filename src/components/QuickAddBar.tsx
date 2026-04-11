@@ -1,17 +1,28 @@
 import { useState, useRef } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { parseTransactionInput, type ParsedTransaction } from '../utils/transactionParser';
+import { usePrivacyMode } from '../hooks/usePrivacyMode';
 
 interface QuickAddBarProps {
   onParsed: (parsed: ParsedTransaction) => void;
 }
 
-const EXAMPLES = ['Coffee 150', 'Salary 30k', 'Uber 15.50'];
+interface Example {
+  full: string;
+  label: string;
+}
+
+const EXAMPLES: Example[] = [
+  { full: 'Coffee 150', label: 'Coffee' },
+  { full: 'Salary 30k', label: 'Salary' },
+  { full: 'Uber 15.50', label: 'Uber' },
+];
 
 export default function QuickAddBar({ onParsed }: QuickAddBarProps) {
   const [value, setValue] = useState('');
   const [error, setError] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { privacyMode } = usePrivacyMode();
 
   const handleSubmit = () => {
     const result = parseTransactionInput(value);
@@ -21,7 +32,7 @@ export default function QuickAddBar({ onParsed }: QuickAddBarProps) {
       setError(false);
     } else {
       setError(true);
-      setTimeout(() => setError(false), 2000);
+      setTimeout(() => setError(false), 4000);
     }
   };
 
@@ -67,17 +78,19 @@ export default function QuickAddBar({ onParsed }: QuickAddBarProps) {
         </button>
       </div>
       {error && (
-        <p className="text-danger text-xs mt-1.5 ml-1">Enter a description and amount</p>
+        <p className="text-danger text-xs mt-1.5 ml-1">
+          Include an amount, e.g. "Coffee 150"
+        </p>
       )}
       <div className="flex gap-1.5 mt-2 ml-0.5">
         {EXAMPLES.map((ex) => (
           <button
-            key={ex}
+            key={ex.full}
             type="button"
-            onClick={() => handleChipTap(ex)}
+            onClick={() => handleChipTap(ex.full)}
             className="text-[10px] text-text-secondary/50 bg-surface-light border border-border/50 rounded-lg px-2 py-0.5 transition-all active:scale-95 hover:text-text-secondary"
           >
-            {ex}
+            {privacyMode ? ex.label : ex.full}
           </button>
         ))}
       </div>

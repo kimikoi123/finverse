@@ -20,7 +20,7 @@ export const BANKS: Institution[] = [
   { key: 'landbank', name: 'Landbank', color: '#0e6834', logo: 'https://www.google.com/s2/favicons?domain=landbank.com&sz=128' },
   { key: 'pnb', name: 'PNB', color: '#003087', logo: 'https://www.google.com/s2/favicons?domain=pnb.com.ph&sz=128' },
   { key: 'psbank', name: 'PSBank', color: '#0054a6', logo: 'https://www.google.com/s2/favicons?domain=psbank.com.ph&sz=128' },
-  { key: 'rcbc', name: 'RCBC', color: '#0033a0', logo: 'https://www.google.com/s2/favicons?domain=rcbc.com&sz=128' },
+  { key: 'rcbc', name: 'RCBC', color: '#0033a0', logo: 'https://www.google.com/s2/favicons?domain=rcbc.com.ph&sz=128' },
   { key: 'securitybank', name: 'Security Bank', color: '#00529b', shortName: 'SBank', logo: 'https://www.google.com/s2/favicons?domain=securitybank.com&sz=128' },
   { key: 'unionbank', name: 'UnionBank', color: '#f37021', logo: 'https://www.google.com/s2/favicons?domain=unionbankph.com&sz=128' },
 ];

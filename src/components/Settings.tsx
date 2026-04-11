@@ -35,6 +35,8 @@ export default function Settings({
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState(preferences.displayName);
   const [editingCurrency, setEditingCurrency] = useState(false);
+  const [paydayDayError, setPaydayDayError] = useState<string | null>(null);
+  const [paydayAmountError, setPaydayAmountError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const saveName = useCallback(() => {
@@ -59,21 +61,39 @@ export default function Settings({
   };
 
   const handlePaydayDayBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    const val = parseInt(e.target.value, 10);
-    if (!isNaN(val) && val >= 1 && val <= 31) {
-      onUpdate({ paydayDay: val });
-    } else if (e.target.value === '') {
+    const raw = e.target.value;
+    if (raw === '') {
       onUpdate({ paydayDay: undefined });
+      setPaydayDayError(null);
+      return;
     }
+    const val = parseInt(raw, 10);
+    if (isNaN(val) || val < 1 || val > 31) {
+      setPaydayDayError('Enter a day between 1 and 31.');
+      return;
+    }
+    setPaydayDayError(null);
+    onUpdate({ paydayDay: val });
   };
 
   const handlePaydayAmountBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    const val = parseFloat(e.target.value);
-    if (!isNaN(val) && val > 0) {
-      onUpdate({ paydayAmount: val });
-    } else if (e.target.value === '') {
+    const raw = e.target.value;
+    if (raw === '') {
       onUpdate({ paydayAmount: undefined });
+      setPaydayAmountError(null);
+      return;
     }
+    const val = parseFloat(raw);
+    if (isNaN(val)) {
+      setPaydayAmountError('Enter a valid amount.');
+      return;
+    }
+    if (val <= 0) {
+      setPaydayAmountError('Amount must be greater than 0.');
+      return;
+    }
+    setPaydayAmountError(null);
+    onUpdate({ paydayAmount: val });
   };
 
   const handlePaydayCurrencyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -162,31 +182,51 @@ export default function Settings({
           </h2>
           <div className="bg-surface rounded-2xl border border-border overflow-hidden">
             {/* Day of month */}
-            <div className="flex justify-between items-center py-3 px-4 border-b border-border">
-              <span className="text-sm text-text-primary">Day of month</span>
-              <input
-                type="number"
-                min={1}
-                max={31}
-                defaultValue={preferences.paydayDay ?? ''}
-                placeholder="Not set"
-                onBlur={handlePaydayDayBlur}
-                className="bg-surface border border-border rounded-xl py-2 px-3 text-sm text-text-primary outline-none focus:ring-2 focus:ring-primary/40 transition-shadow w-24 text-right placeholder:text-text-secondary/50"
-              />
+            <div className="py-3 px-4 border-b border-border">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-text-primary">Day of month</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={31}
+                  defaultValue={preferences.paydayDay ?? ''}
+                  placeholder="Not set"
+                  onBlur={handlePaydayDayBlur}
+                  aria-invalid={paydayDayError ? true : undefined}
+                  className={`bg-surface border rounded-xl py-2 px-3 text-sm text-text-primary outline-none focus:ring-2 transition-shadow w-24 text-right placeholder:text-text-secondary/50 ${
+                    paydayDayError
+                      ? 'border-danger/60 focus:ring-danger/30'
+                      : 'border-border focus:ring-primary/40'
+                  }`}
+                />
+              </div>
+              {paydayDayError && (
+                <p className="text-xs text-danger mt-1.5 text-right">{paydayDayError}</p>
+              )}
             </div>
 
             {/* Amount */}
-            <div className="flex justify-between items-center py-3 px-4 border-b border-border">
-              <span className="text-sm text-text-primary">Amount</span>
-              <input
-                type="number"
-                min={0}
-                step="0.01"
-                defaultValue={preferences.paydayAmount ?? ''}
-                placeholder="Not set"
-                onBlur={handlePaydayAmountBlur}
-                className="bg-surface border border-border rounded-xl py-2 px-3 text-sm text-text-primary outline-none focus:ring-2 focus:ring-primary/40 transition-shadow w-32 text-right placeholder:text-text-secondary/50"
-              />
+            <div className="py-3 px-4 border-b border-border">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-text-primary">Amount</span>
+                <input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  defaultValue={preferences.paydayAmount ?? ''}
+                  placeholder="Not set"
+                  onBlur={handlePaydayAmountBlur}
+                  aria-invalid={paydayAmountError ? true : undefined}
+                  className={`bg-surface border rounded-xl py-2 px-3 text-sm text-text-primary outline-none focus:ring-2 transition-shadow w-32 text-right placeholder:text-text-secondary/50 ${
+                    paydayAmountError
+                      ? 'border-danger/60 focus:ring-danger/30'
+                      : 'border-border focus:ring-primary/40'
+                  }`}
+                />
+              </div>
+              {paydayAmountError && (
+                <p className="text-xs text-danger mt-1.5 text-right">{paydayAmountError}</p>
+              )}
             </div>
 
             {/* Currency */}

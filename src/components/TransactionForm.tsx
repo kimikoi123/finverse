@@ -3,7 +3,8 @@ import { ChevronDown, X } from 'lucide-react';
 import { useEscapeKey } from '../hooks/useEscapeKey';
 import { CURRENCIES } from '../utils/currencies';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '../utils/categories';
-import { parseAmountInput, isKNotation } from '../utils/amountParser';
+import { parseAmountInput, isKNotation, validateAmountInput, amountErrorMessage } from '../utils/amountParser';
+import InlineAlert from './ui/InlineAlert';
 import ReceiptScanner from './ReceiptScanner';
 import type { ScanResult } from './ReceiptScanner';
 import type { FinanceCategoryDef } from '../utils/categories';
@@ -87,6 +88,8 @@ export default function TransactionForm({
   const [recurringEndDate, setRecurringEndDate] = useState<string | undefined>(editingTransaction?.recurringEndDate);
   const [repeatsForever, setRepeatsForever] = useState(!editingTransaction?.recurringEndDate);
   const [showCurrencyDropdown, setShowCurrencyDropdown] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const dismissValidation = useCallback(() => setValidationError(null), []);
   const isEditing = !!editingTransaction;
 
   const handleScanApply = useCallback((result: ScanResult) => {
@@ -100,14 +103,18 @@ export default function TransactionForm({
   }, [categories]);
 
   const parsedAmount = parseAmountInput(amount);
-  const canSave = parsedAmount > 0;
 
   const handleSave = () => {
-    if (!canSave) return;
+    const result = validateAmountInput(amount);
+    if (!result.ok) {
+      setValidationError(amountErrorMessage(result.reason));
+      return;
+    }
+    setValidationError(null);
     const freq = isRecurring ? recurringFrequency : undefined;
     onSave({
       type,
-      amount: parsedAmount,
+      amount: result.value,
       currency,
       category,
       description: description.trim(),
@@ -262,11 +269,13 @@ export default function TransactionForm({
             />
           </div>
 
-          {/* Receipt Scanner */}
-          <ReceiptScanner
-            onApply={handleScanApply}
-            showPhoto={false}
-          />
+          {/* Receipt Scanner — expenses only */}
+          {isExpense && (
+            <ReceiptScanner
+              onApply={handleScanApply}
+              showPhoto={false}
+            />
+          )}
 
           {/* Account selector */}
           {accounts && accounts.length > 0 && (
@@ -481,39 +490,41 @@ export default function TransactionForm({
                 </div>
               )}
 
-              {/* End date */}
-              <div>
-                <div className="flex items-center justify-between py-2">
-                  <div className="text-sm text-text-primary">Repeats forever</div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setRepeatsForever(!repeatsForever);
-                      if (!repeatsForever) setRecurringEndDate(undefined);
-                    }}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      repeatsForever ? 'bg-primary' : 'bg-border'
-                    }`}
-                    role="switch"
-                    aria-checked={repeatsForever}
-                  >
-                    <span
-                      className={`inline-block h-4 w-4 rounded-full bg-white transition-transform ${
-                        repeatsForever ? 'translate-x-6' : 'translate-x-1'
+              {/* End date — not applicable for custom frequency (dates are explicit) */}
+              {recurringFrequency !== 'custom' && (
+                <div>
+                  <div className="flex items-center justify-between py-2">
+                    <div className="text-sm text-text-primary">Repeats forever</div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRepeatsForever(!repeatsForever);
+                        if (!repeatsForever) setRecurringEndDate(undefined);
+                      }}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        repeatsForever ? 'bg-primary' : 'bg-border'
                       }`}
+                      role="switch"
+                      aria-checked={repeatsForever}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 rounded-full bg-white transition-transform ${
+                          repeatsForever ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                  {!repeatsForever && (
+                    <input
+                      type="date"
+                      value={recurringEndDate ?? ''}
+                      onChange={(e) => setRecurringEndDate(e.target.value || undefined)}
+                      aria-label="Recurring end date"
+                      className="w-full bg-surface border border-border rounded-xl py-3 px-4 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 transition-all mt-2"
                     />
-                  </button>
+                  )}
                 </div>
-                {!repeatsForever && (
-                  <input
-                    type="date"
-                    value={recurringEndDate ?? ''}
-                    onChange={(e) => setRecurringEndDate(e.target.value || undefined)}
-                    aria-label="Recurring end date"
-                    className="w-full bg-surface border border-border rounded-xl py-3 px-4 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 transition-all mt-2"
-                  />
-                )}
-              </div>
+              )}
             </div>
           )}
         </div>
@@ -524,6 +535,15 @@ export default function TransactionForm({
         className="flex-shrink-0 px-4 pt-3 pb-3 border-t border-border/30 bg-bg"
         style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.75rem)' }}
       >
+        {validationError && (
+          <div className="mb-3">
+            <InlineAlert
+              message={validationError}
+              onDismiss={dismissValidation}
+              autoDismissMs={5000}
+            />
+          </div>
+        )}
         <div className="flex gap-3">
           <button
             type="button"
@@ -535,11 +555,10 @@ export default function TransactionForm({
           <button
             type="button"
             onClick={handleSave}
-            disabled={!canSave}
             className={`flex-[2] rounded-2xl py-3.5 font-semibold text-sm transition-all ${
-              canSave
+              parsedAmount > 0
                 ? 'bg-primary text-white active:opacity-80'
-                : 'bg-primary/40 text-white/50 cursor-not-allowed'
+                : 'bg-primary/60 text-white active:opacity-80'
             }`}
           >
             Save

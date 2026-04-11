@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ArrowLeft, Plus, Pencil, Trash2, Link } from 'lucide-react';
 import type { Goal, Account } from '../types';
 import { formatCurrency } from '../utils/currencies';
+import { formatDisplayDate } from '../utils/dates';
 import ConfirmDialog from './ui/ConfirmDialog';
 
 interface GoalListProps {
@@ -49,7 +50,7 @@ function GoalCard({
 
         {goal.deadline && (
           <p className="text-xs text-text-secondary mt-0.5">
-            Deadline: {goal.deadline}
+            Deadline: {formatDisplayDate(goal.deadline)}
           </p>
         )}
 
@@ -78,7 +79,7 @@ function GoalCard({
             {formatCurrency(goal.targetAmount, goal.currency)}
           </p>
           <p className="text-xs text-text-secondary font-medium">
-            {Math.round(percentage)}%
+            {Math.round(Math.min(percentage, 100))}%
           </p>
         </div>
       </div>

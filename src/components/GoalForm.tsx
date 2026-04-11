@@ -2,6 +2,8 @@ import { useState, useCallback } from 'react';
 import { X, Check } from 'lucide-react';
 import { useEscapeKey } from '../hooks/useEscapeKey';
 import { parseAmountInput, isKNotation } from '../utils/amountParser';
+import { todayISO } from '../utils/dates';
+import InlineAlert from './ui/InlineAlert';
 import type { Goal, Account } from '../types';
 import { ACCOUNT_COLORS } from '../hooks/useAccounts';
 
@@ -37,6 +39,9 @@ export default function GoalForm({
     () => editingGoal?.color ?? ACCOUNT_COLORS[0] ?? '#2d6a4f'
   );
   const [currency] = useState(editingGoal?.currency ?? 'PHP');
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const dismissValidation = useCallback(() => setValidationError(null), []);
+  const minDeadline = todayISO();
 
   const hasLinkedAccount = linkedAccountId.length > 0;
 
@@ -46,7 +51,24 @@ export default function GoalForm({
   const canSave = name.trim().length > 0 && parsedTarget > 0;
 
   const handleSave = useCallback(() => {
-    if (!canSave) return;
+    if (name.trim().length === 0) {
+      setValidationError('Please enter a goal name.');
+      return;
+    }
+    if (parsedTarget <= 0) {
+      setValidationError('Target amount must be greater than 0.');
+      return;
+    }
+    if (!hasLinkedAccount && parsedSaved > parsedTarget) {
+      setValidationError('Saved amount cannot exceed target.');
+      return;
+    }
+    if (deadline && deadline < minDeadline) {
+      setValidationError('Deadline must be in the future.');
+      return;
+    }
+
+    setValidationError(null);
 
     const data: Omit<Goal, 'id' | 'createdAt'> = {
       name: name.trim(),
@@ -60,7 +82,6 @@ export default function GoalForm({
 
     onSave(data);
   }, [
-    canSave,
     name,
     parsedTarget,
     parsedSaved,
@@ -68,6 +89,7 @@ export default function GoalForm({
     linkedAccountId,
     currency,
     deadline,
+    minDeadline,
     selectedColor,
     onSave,
   ]);
@@ -179,6 +201,7 @@ export default function GoalForm({
             <input
               type="date"
               value={deadline}
+              min={minDeadline}
               onChange={(e) => setDeadline(e.target.value)}
               aria-label="Deadline"
               className="w-full bg-surface border border-border rounded-xl py-3 px-4 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 transition-all"
@@ -222,6 +245,15 @@ export default function GoalForm({
         className="flex-shrink-0 px-4 pt-3 pb-3 border-t border-border/30 bg-bg"
         style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.75rem)' }}
       >
+        {validationError && (
+          <div className="mb-3">
+            <InlineAlert
+              message={validationError}
+              onDismiss={dismissValidation}
+              autoDismissMs={5000}
+            />
+          </div>
+        )}
         <button
           type="button"
           onClick={handleSave}

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { TrendingUp } from 'lucide-react';
 import type { Transaction } from '../types';
 import { formatCurrency } from '../utils/currencies';
@@ -59,7 +59,23 @@ export default function HomeDashboard({
   paydayCurrency,
   onQuickAdd,
 }: HomeDashboardProps) {
-  const [period, setPeriod] = useState<'day' | 'week' | 'month'>('day');
+  const [period, setPeriod] = useState<'day' | 'week' | 'month'>(() => {
+    try {
+      const saved = localStorage.getItem('home-period');
+      if (saved === 'day' || saved === 'week' || saved === 'month') return saved;
+    } catch {
+      // ignore
+    }
+    return 'day';
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('home-period', period);
+    } catch {
+      // ignore
+    }
+  }, [period]);
 
   const now = new Date();
   const todayISO = isoDate(now);
