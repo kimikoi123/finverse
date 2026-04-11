@@ -42,4 +42,38 @@ describe('computePhTax', () => {
       expect(r.sss).toBe(1575);
     });
   });
+
+  describe('PhilHealth employee share', () => {
+    it('pins gross below 10000 to minimum 250', () => {
+      const r = computePhTax(8000);
+      expect(r.philHealth).toBe(250);
+    });
+
+    it('computes 2.5% at 30000 gross -> 750', () => {
+      const r = computePhTax(30000);
+      expect(r.philHealth).toBe(750);
+    });
+
+    it('pins gross above 100000 to maximum 2500', () => {
+      const r = computePhTax(150000);
+      expect(r.philHealth).toBe(2500);
+    });
+  });
+
+  describe('Pag-IBIG employee share', () => {
+    it('computes 2% at 8000 gross -> 160', () => {
+      const r = computePhTax(8000);
+      expect(r.pagIbig).toBe(160);
+    });
+
+    it('caps at 200 for gross of 10000', () => {
+      const r = computePhTax(10000);
+      expect(r.pagIbig).toBe(200);
+    });
+
+    it('caps at 200 for gross well above 10000', () => {
+      const r = computePhTax(50000);
+      expect(r.pagIbig).toBe(200);
+    });
+  });
 });
