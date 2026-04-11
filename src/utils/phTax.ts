@@ -26,6 +26,22 @@ const PHILHEALTH_CEILING_SALARY = 100000;
 const PAGIBIG_RATE = 0.02;
 const PAGIBIG_CAP = 200;
 
+interface TaxBracket {
+  upTo: number;      // annual taxable income upper bound (exclusive); Infinity for top bracket
+  base: number;     // flat tax at the start of this bracket
+  rate: number;     // marginal rate on excess over `over`
+  over: number;     // threshold the marginal rate applies to
+}
+
+const BIR_ANNUAL_BRACKETS: TaxBracket[] = [
+  { upTo: 250000,   base: 0,       rate: 0,    over: 0 },
+  { upTo: 400000,   base: 0,       rate: 0.15, over: 250000 },
+  { upTo: 800000,   base: 22500,   rate: 0.20, over: 400000 },
+  { upTo: 2000000,  base: 102500,  rate: 0.25, over: 800000 },
+  { upTo: 8000000,  base: 402500,  rate: 0.30, over: 2000000 },
+  { upTo: Infinity, base: 2202500, rate: 0.35, over: 8000000 },
+];
+
 function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
@@ -49,6 +65,16 @@ function computePagIbig(gross: number): number {
   return round2(Math.min(gross * PAGIBIG_RATE, PAGIBIG_CAP));
 }
 
+function computeAnnualIncomeTax(annualTaxable: number): number {
+  if (annualTaxable <= 0) return 0;
+  for (const bracket of BIR_ANNUAL_BRACKETS) {
+    if (annualTaxable <= bracket.upTo) {
+      return bracket.base + (annualTaxable - bracket.over) * bracket.rate;
+    }
+  }
+  return 0;
+}
+
 const EMPTY: PhTaxBreakdown = {
   sss: 0,
   philHealth: 0,
@@ -69,13 +95,18 @@ export function computePhTax(monthlyGross: number): PhTaxBreakdown {
   const pagIbig = computePagIbig(monthlyGross);
   const totalContributions = round2(sss + philHealth + pagIbig);
 
+  const taxableIncome = round2(monthlyGross - totalContributions);
+  const annualTaxable = taxableIncome * 12;
+  const withholdingTax = round2(computeAnnualIncomeTax(annualTaxable) / 12);
+  const netTakeHome = round2(monthlyGross - totalContributions - withholdingTax);
+
   return {
     sss,
     philHealth,
     pagIbig,
     totalContributions,
-    taxableIncome: 0,
-    withholdingTax: 0,
-    netTakeHome: 0,
+    taxableIncome,
+    withholdingTax,
+    netTakeHome,
   };
 }
