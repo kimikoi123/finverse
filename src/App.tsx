@@ -41,6 +41,7 @@ import InstallmentForm from './components/InstallmentForm';
 import CashflowForecast from './components/CashflowForecast';
 import PlannedPayments from './components/PlannedPayments';
 import SettingsScreen from './components/Settings';
+import PHTaxCalculator from './components/PHTaxCalculator';
 import { useGoals } from './hooks/useGoals';
 import { useDebts } from './hooks/useDebts';
 import { useInstallments } from './hooks/useInstallments';
@@ -117,6 +118,7 @@ function App() {
   const [showPlannedPayments, setShowPlannedPayments] = useState(false);
   const [editingInstallment, setEditingInstallment] = useState<Installment | null>(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [showTaxCalculator, setShowTaxCalculator] = useState(false);
   const [pendingSharedTrip, setPendingSharedTrip] = useState<Trip | null>(null);
 
   useEffect(() => {
@@ -405,7 +407,13 @@ function App() {
             onBack={() => setShowSettings(false)}
             privacyMode={privacyMode}
             onTogglePrivacy={togglePrivacyMode}
+            onOpenTaxCalculator={() => setShowTaxCalculator(true)}
           />
+        )}
+        {showTaxCalculator && (
+          <div className="fixed inset-0 z-50 bg-bg">
+            <PHTaxCalculator onBack={() => setShowTaxCalculator(false)} />
+          </div>
         )}
         {!showSettings && activeTab === 'home' && (
           <HomeDashboard
