@@ -420,9 +420,7 @@ function App() {
             displayName={preferences.displayName}
             transactions={transactions}
             defaultCurrency={preferences.defaultCurrency}
-            paydayDay={preferences.paydayDay}
-            paydayAmount={preferences.paydayAmount}
-            paydayCurrency={preferences.paydayCurrency}
+            paydayConfig={preferences.paydayConfig}
             onQuickAdd={handleQuickAdd}
           />
         )}
@@ -459,9 +457,7 @@ function App() {
               debts={debts}
               accounts={accounts}
               defaultCurrency={preferences.defaultCurrency}
-              paydayDay={preferences.paydayDay}
-              paydayAmount={preferences.paydayAmount}
-              paydayCurrency={preferences.paydayCurrency}
+              paydayConfig={preferences.paydayConfig}
               exchangeRates={exchangeRates.rates}
               onBack={() => setShowCashflowForecast(false)}
             />
