@@ -194,7 +194,39 @@ export default function HomeDashboard({
           </h1>
         </div>
 
-        <div className="min-h-[50vh] flex items-center justify-center">
+        {paydayInfo != null && (
+          <div className="bg-surface rounded-2xl border border-border p-4 mb-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                  <TrendingUp size={18} className="text-primary" />
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase text-text-secondary font-semibold tracking-wider">
+                    DAYS UNTIL PAYDAY
+                  </p>
+                  {paydayInfo.daysUntil === 0 ? (
+                    <p className="text-xl font-bold text-primary">Payday!</p>
+                  ) : (
+                    <p className="text-xl font-bold text-text-primary">
+                      {paydayInfo.daysUntil} day{paydayInfo.daysUntil !== 1 ? 's' : ''}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="font-semibold text-primary">
+                  {formatCurrency(paydayInfo.amount, paydayInfo.currency)}
+                </p>
+                <p className="text-xs text-text-secondary">
+                  {formatShortDate(paydayInfo.date)}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="min-h-[40vh] flex items-center justify-center">
           <div className="flex flex-col items-center gap-3 text-center">
             <span className="text-5xl">📊</span>
             <h2 className="text-xl font-bold text-text-primary" data-heading>
