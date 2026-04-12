@@ -14,7 +14,7 @@ export interface PhTaxBreakdown {
   netTakeHome: number;
 }
 
-const SSS_EMPLOYEE_RATE = 0.045;
+const SSS_EMPLOYEE_RATE = 0.05;
 const SSS_MSC_FLOOR = 5000;
 const SSS_MSC_CEILING = 35000;
 const SSS_MSC_STEP = 500;

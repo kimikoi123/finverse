@@ -27,19 +27,19 @@ describe('computePhTax', () => {
   });
 
   describe('SSS employee share', () => {
-    it('clamps gross below floor to MSC 5000 (sss = 225)', () => {
+    it('clamps gross below floor to MSC 5000 (sss = 250)', () => {
       const r = computePhTax(4000);
-      expect(r.sss).toBe(225);
+      expect(r.sss).toBe(250);
     });
 
-    it('computes 4.5% of MSC rounded down to nearest 500 at mid range (gross 27300 -> MSC 27000 -> 1215)', () => {
+    it('computes 5% of MSC rounded down to nearest 500 at mid range (gross 27300 -> MSC 27000 -> 1350)', () => {
       const r = computePhTax(27300);
-      expect(r.sss).toBe(1215);
+      expect(r.sss).toBe(1350);
     });
 
-    it('clamps gross above ceiling to MSC 35000 (sss = 1575)', () => {
+    it('clamps gross above ceiling to MSC 35000 (sss = 1750)', () => {
       const r = computePhTax(150000);
-      expect(r.sss).toBe(1575);
+      expect(r.sss).toBe(1750);
     });
   });
 
@@ -79,44 +79,44 @@ describe('computePhTax', () => {
 
   describe('withholding tax (TRAIN law, 2023+)', () => {
     it('low gross yields annual taxable under 250000 -> tax 0', () => {
-      // Gross 20000: SSS 900, PhilHealth 500, Pag-IBIG 200 -> total 1600
-      // Monthly taxable 18400, annual 220800 (bracket 1) -> 0
+      // Gross 20000: SSS 1000, PhilHealth 500, Pag-IBIG 200 -> total 1700
+      // Monthly taxable 18300, annual 219600 (bracket 1) -> 0
       const r = computePhTax(20000);
       expect(r.withholdingTax).toBe(0);
     });
   });
 
   describe('end-to-end sample: gross 50000', () => {
-    // SSS: MSC 35000 * 0.045 = 1575
+    // SSS: MSC 35000 * 0.05 = 1750
     // PhilHealth: 50000 * 0.025 = 1250
     // Pag-IBIG: min(50000 * 0.02, 200) = 200
-    // Total contributions: 3025
-    // Monthly taxable: 46975
-    // Annual taxable: 563700
-    // Bracket 3 (400k-800k): 22500 + 20% * (563700 - 400000) = 22500 + 32740 = 55240
-    // Monthly tax: 55240 / 12 = 4603.33
-    // Net: 50000 - 3025 - 4603.33 = 42371.67
+    // Total contributions: 3200
+    // Monthly taxable: 46800
+    // Annual taxable: 561600
+    // Bracket 3 (400k-800k): 22500 + 20% * (561600 - 400000) = 22500 + 32320 = 54820
+    // Monthly tax: 54820 / 12 = 4568.33
+    // Net: 50000 - 3200 - 4568.33 = 42231.67
     it('matches hand-verified breakdown', () => {
       const r = computePhTax(50000);
-      expect(r.sss).toBe(1575);
+      expect(r.sss).toBe(1750);
       expect(r.philHealth).toBe(1250);
       expect(r.pagIbig).toBe(200);
-      expect(r.totalContributions).toBe(3025);
-      expect(r.taxableIncome).toBe(46975);
-      expect(r.withholdingTax).toBe(4603.33);
-      expect(r.netTakeHome).toBe(42371.67);
+      expect(r.totalContributions).toBe(3200);
+      expect(r.taxableIncome).toBe(46800);
+      expect(r.withholdingTax).toBe(4568.33);
+      expect(r.netTakeHome).toBe(42231.67);
     });
   });
 
   describe('bracket boundaries', () => {
     it('very high gross lands in bracket 6 (35%)', () => {
       // Gross 1,000,000/month:
-      // SSS 1575, PhilHealth 2500, Pag-IBIG 200 -> total 4275
-      // Monthly taxable 995725, annual 11948700
-      // Bracket 6: 2202500 + 35% * (11948700 - 8000000) = 2202500 + 1382045 = 3584545
-      // Monthly: 298712.08
+      // SSS 1750, PhilHealth 2500, Pag-IBIG 200 -> total 4450
+      // Monthly taxable 995550, annual 11946600
+      // Bracket 6: 2202500 + 35% * (11946600 - 8000000) = 2202500 + 1381310 = 3583810
+      // Monthly: 298650.83
       const r = computePhTax(1000000);
-      expect(r.withholdingTax).toBe(298712.08);
+      expect(r.withholdingTax).toBe(298650.83);
     });
   });
 });
