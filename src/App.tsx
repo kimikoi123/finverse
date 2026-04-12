@@ -395,7 +395,7 @@ function App() {
         />
       )}
 
-      <main className="pb-20">
+      <main className={showSettings ? '' : 'pb-20'}>
         {showSettings && (
           <SettingsScreen
             preferences={preferences}
@@ -551,17 +551,18 @@ function App() {
         )}
       </main>
 
-      <BottomTabBar
-        activeTab={activeTab}
-        onTabChange={(tab) => {
-          setActiveTab(tab);
-          setShowSettings(false);
-          if (tab !== 'wallet') setSelectedAccountId(null);
-          if (tab !== 'plan') { setActiveTrip(null); setShowCashflowForecast(false); setShowPlannedPayments(false); setShowBudgetList(false); setShowGoalList(false); setShowDebtList(false); setShowInstallmentList(false); }
-        }}
-        onFabClick={() => setShowActionMenu(!showActionMenu)}
-        fabOpen={showActionMenu}
-      />
+      {!showSettings && (
+        <BottomTabBar
+          activeTab={activeTab}
+          onTabChange={(tab) => {
+            setActiveTab(tab);
+            if (tab !== 'wallet') setSelectedAccountId(null);
+            if (tab !== 'plan') { setActiveTrip(null); setShowCashflowForecast(false); setShowPlannedPayments(false); setShowBudgetList(false); setShowGoalList(false); setShowDebtList(false); setShowInstallmentList(false); }
+          }}
+          onFabClick={() => setShowActionMenu(!showActionMenu)}
+          fabOpen={showActionMenu}
+        />
+      )}
 
       {showActionMenu && (
         <ActionMenu

@@ -220,6 +220,7 @@ export default function ExpenseForm({ members, baseCurrency, customCategories, o
             placeholder="Amount"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
+            onKeyDown={(e) => { if (e.key === '-') e.preventDefault(); }}
             aria-label="Expense amount"
             className="flex-1 bg-surface-light/60 border border-border/60 rounded-xl px-4 py-3 text-sm text-text-primary placeholder:text-text-secondary/30 focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 focus:bg-surface-light transition-all"
           />

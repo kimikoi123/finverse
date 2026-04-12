@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { TrendingUp } from 'lucide-react';
 import type { Transaction, PaydayConfig } from '../types';
-import { formatCurrency } from '../utils/currencies';
+import { formatCurrency, isPrivacyMode } from '../utils/currencies';
 import { getFinanceCategoryDef } from '../utils/categories';
 import { getNextRecurringDate } from '../utils/forecast';
 import { getNearestPayday } from '../utils/payday';
@@ -265,9 +265,12 @@ export default function HomeDashboard({
           </p>
           <div className="flex items-end gap-1 h-16 mb-1">
             {last7Days.bars.map((bar) => {
-              const heightPct = last7Days.maxVal > 0
-                ? Math.max((bar.total / last7Days.maxVal) * 100, 2)
-                : 2;
+              const privacy = isPrivacyMode();
+              const heightPct = privacy
+                ? 40
+                : last7Days.maxVal > 0
+                  ? Math.max((bar.total / last7Days.maxVal) * 100, 2)
+                  : 2;
               const isToday = bar.iso === todayISO;
               return (
                 <div
@@ -275,7 +278,7 @@ export default function HomeDashboard({
                   className="flex-1 flex flex-col justify-end h-full"
                 >
                   <div
-                    className={`rounded-sm min-h-[2px] ${isToday ? 'bg-primary' : 'bg-border'}`}
+                    className={`rounded-sm min-h-[2px] ${privacy ? 'bg-border' : isToday ? 'bg-primary' : 'bg-border'}`}
                     style={{ height: `${heightPct}%` }}
                   />
                 </div>

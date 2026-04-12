@@ -161,6 +161,9 @@ export default function AccountCharts({
   accountId,
   accountColor,
 }: AccountChartsProps) {
+  const accountTxns = transactions.filter((t) => t.accountId === accountId);
+  if (accountTxns.length === 0) return null;
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mx-4 mt-4">
       <WeeklyBarChart

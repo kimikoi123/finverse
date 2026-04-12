@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { ChevronDown, X } from 'lucide-react';
 import { useEscapeKey } from '../hooks/useEscapeKey';
 import { CURRENCIES } from '../utils/currencies';
@@ -89,6 +89,7 @@ export default function TransactionForm({
   const [repeatsForever, setRepeatsForever] = useState(!editingTransaction?.recurringEndDate);
   const [showCurrencyDropdown, setShowCurrencyDropdown] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const recurringOptionsRef = useRef<HTMLDivElement>(null);
   const dismissValidation = useCallback(() => setValidationError(null), []);
   const isEditing = !!editingTransaction;
 
@@ -161,6 +162,7 @@ export default function TransactionForm({
             placeholder="0.00"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
+            onKeyDown={(e) => { if (e.key === '-') e.preventDefault(); }}
             aria-label="Transaction amount"
             className="w-full text-7xl md:text-8xl lg:text-9xl font-bold text-text-primary text-center bg-transparent border-none outline-none placeholder:text-text-secondary/30 tracking-tight"
             autoFocus
@@ -328,7 +330,13 @@ export default function TransactionForm({
             </div>
             <button
               type="button"
-              onClick={() => setIsRecurring(!isRecurring)}
+              onClick={() => {
+                const next = !isRecurring;
+                setIsRecurring(next);
+                if (next) {
+                  setTimeout(() => recurringOptionsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+                }
+              }}
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                 isRecurring ? 'bg-primary' : 'bg-border'
               }`}
@@ -344,7 +352,7 @@ export default function TransactionForm({
           </div>
 
           {isRecurring && (
-            <div className="space-y-4">
+            <div ref={recurringOptionsRef} className="space-y-4">
               {/* Frequency picker */}
               <div>
                 <div className="text-[11px] text-text-secondary font-semibold uppercase tracking-wider mb-1.5">FREQUENCY</div>

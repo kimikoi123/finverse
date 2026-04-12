@@ -24,13 +24,14 @@ export default function QuickAddBar({ onParsed }: QuickAddBarProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const { privacyMode } = usePrivacyMode();
 
+  const parsed = value.trim() ? parseTransactionInput(value) : null;
+
   const handleSubmit = () => {
-    const result = parseTransactionInput(value);
-    if (result) {
-      onParsed(result);
+    if (parsed) {
+      onParsed(parsed);
       setValue('');
       setError(false);
-    } else {
+    } else if (value.trim()) {
       setError(true);
       setTimeout(() => setError(false), 4000);
     }
@@ -70,7 +71,7 @@ export default function QuickAddBar({ onParsed }: QuickAddBarProps) {
         <button
           type="button"
           onClick={handleSubmit}
-          disabled={!value.trim()}
+          disabled={!parsed}
           aria-label="Submit quick add"
           className="shrink-0 w-10 h-10 flex items-center justify-center bg-primary text-white rounded-xl transition-all active:scale-95 disabled:opacity-30"
         >

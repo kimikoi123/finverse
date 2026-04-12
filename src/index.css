@@ -21,7 +21,7 @@
   --border: #e5e7eb;
   --border-subtle: #d1d5db;
   --primary-glow: rgba(45, 106, 79, 0.12);
-  --glass-bg: rgba(255, 255, 255, 0.85);
+  --glass-bg: rgba(255, 255, 255, 0.97);
   --glass-border: rgba(0, 0, 0, 0.06);
   --scrollbar-thumb: rgba(0, 0, 0, 0.12);
   --scrollbar-thumb-hover: rgba(0, 0, 0, 0.2);
@@ -48,7 +48,7 @@
   --border: #26263a;
   --border-subtle: #1e1e30;
   --primary-glow: rgba(45, 106, 79, 0.12);
-  --glass-bg: rgba(18, 18, 26, 0.82);
+  --glass-bg: rgba(18, 18, 26, 0.97);
   --glass-border: rgba(255, 255, 255, 0.04);
   --scrollbar-thumb: rgba(255, 255, 255, 0.08);
   --scrollbar-thumb-hover: rgba(255, 255, 255, 0.14);

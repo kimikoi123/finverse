@@ -225,6 +225,23 @@ export default function WalletTab({
   const [filter, setFilter] = useState<FilterType>('all');
   const filtered = filterAccounts(accounts, filter);
 
+  const filterDescription: Record<FilterType, string> = {
+    all: 'Debit balances and investments',
+    debit: 'Debit and e-wallet balances',
+    credit: 'Credit card balances',
+    investments: 'Stock and crypto holdings',
+  };
+
+  const filteredTotal = useMemo(() => {
+    if (filter === 'all') return netWorth;
+    return filtered.reduce((sum, a) => {
+      if (a.type === 'stocks' || a.type === 'crypto') {
+        return sum + (a.units ?? 0) * (a.pricePerUnit ?? 0);
+      }
+      return sum + a.balance;
+    }, 0);
+  }, [filter, filtered, netWorth]);
+
   const [activeId, setActiveId] = useState<string | null>(null);
 
   const sensors = useSensors(
@@ -298,12 +315,12 @@ export default function WalletTab({
       {/* Net Worth Card */}
       <div className="bg-surface rounded-2xl border border-border p-5 mb-4">
         <p className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold">
-          Net Worth
+          {filter === 'all' ? 'Net Worth' : `${FILTER_OPTIONS.find((o) => o.key === filter)?.label ?? ''} Total`}
         </p>
         <p className="text-3xl font-bold text-text-primary mt-1">
-          {formatCurrency(netWorth, defaultCurrency)}
+          {formatCurrency(filteredTotal, defaultCurrency)}
         </p>
-        <p className="text-xs text-text-secondary mt-1">Debit balances and investments</p>
+        <p className="text-xs text-text-secondary mt-1">{filterDescription[filter]}</p>
       </div>
 
       {/* Filter Pills */}

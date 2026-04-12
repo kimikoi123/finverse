@@ -132,6 +132,7 @@ export default function SpendingHeatmap({
             <button
               type="button"
               onClick={() => navigateMonth(-1)}
+              aria-label="Previous month"
               className="w-7 h-7 flex items-center justify-center rounded-lg text-text-secondary hover:bg-surface-light transition-colors active:scale-95"
             >
               <ChevronLeft size={16} />
@@ -142,6 +143,7 @@ export default function SpendingHeatmap({
             <button
               type="button"
               onClick={() => navigateMonth(1)}
+              aria-label="Next month"
               className="w-7 h-7 flex items-center justify-center rounded-lg text-text-secondary hover:bg-surface-light transition-colors active:scale-95"
             >
               <ChevronRight size={16} />
@@ -178,10 +180,18 @@ export default function SpendingHeatmap({
             const level = isPrivacyMode() ? 0 : getIntensityLevel(day.total, maxSpending);
             const isToday = isCurrentMonth && day.iso === todayISO;
             const isSelected = selectedDay === day.day;
+            const dateLabel = new Date(viewMonth.year, viewMonth.month, day.day)
+              .toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+            const tooltip = isPrivacyMode()
+              ? dateLabel
+              : day.total > 0
+                ? `${dateLabel} — spent ${formatCurrency(day.total, defaultCurrency)}`
+                : `${dateLabel} — no spending`;
             return (
               <button
                 key={day.day}
                 type="button"
+                title={tooltip}
                 onClick={() =>
                   setSelectedDay(isSelected ? null : day.day)
                 }
