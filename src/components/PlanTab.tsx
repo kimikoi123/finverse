@@ -1,7 +1,7 @@
-import { CalendarClock, CalendarRange, BarChart3, Target, Banknote, CreditCard, ChevronRight } from 'lucide-react';
+import { CalendarClock, CalendarRange, BarChart3, Target, Banknote, CreditCard, ChevronRight, Users } from 'lucide-react';
 import TripList from './TripList';
 import TripDashboard from './TripDashboard';
-import type { Trip, DeletedTrip, Member, Expense, Transaction, Goal, DebtEntry, Installment, ExchangeRates, RateSource } from '../types';
+import type { Trip, DeletedTrip, Member, Expense, Transaction, Goal, DebtEntry, Installment, Employee, ExchangeRates, RateSource } from '../types';
 import type { BudgetWithSpending } from '../hooks/useBudgets';
 
 interface ExchangeRateState {
@@ -22,6 +22,7 @@ interface PlanTabProps {
   goals: Goal[];
   debts: DebtEntry[];
   installments: Installment[];
+  employees: Employee[];
   onSelectTrip: (id: string | null) => void;
   onCreateTrip: (name: string, currency?: string) => Trip;
   onDeleteTrip: (id: string) => void;
@@ -40,6 +41,7 @@ interface PlanTabProps {
   onOpenGoals: () => void;
   onOpenDebts: () => void;
   onOpenInstallments: () => void;
+  onOpenPayroll: () => void;
   showToast: (message: string, onCommit: () => void) => string;
 }
 
@@ -53,6 +55,7 @@ export default function PlanTab({
   goals,
   debts,
   installments,
+  employees,
   onSelectTrip,
   onCreateTrip,
   onDeleteTrip,
@@ -71,6 +74,7 @@ export default function PlanTab({
   onOpenGoals,
   onOpenDebts,
   onOpenInstallments,
+  onOpenPayroll,
   showToast,
 }: PlanTabProps) {
   if (activeTrip) {
@@ -130,6 +134,12 @@ export default function PlanTab({
       label: 'Installments',
       desc: installments.length === 0 ? 'Track credit card installment plans' : `${installments.length} installment${installments.length !== 1 ? 's' : ''}`,
       onClick: onOpenInstallments,
+    },
+    {
+      icon: Users,
+      label: 'Payroll',
+      desc: employees.length === 0 ? 'Track employee payments' : `${employees.length} employee${employees.length !== 1 ? 's' : ''}`,
+      onClick: onOpenPayroll,
     },
   ];
 
