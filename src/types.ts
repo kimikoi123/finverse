@@ -9,7 +9,9 @@ export type SyncEntityType =
   | 'debt'
   | 'installment'
   | 'userPreferences'
-  | 'receipt';
+  | 'receipt'
+  | 'employee'
+  | 'advance';
 
 export interface CurrencyConfig {
   symbol: string;
@@ -249,6 +251,30 @@ export interface Installment {
   creditCardAccountId?: string;
   currency: string;
   notes?: string;
+  createdAt: string;
+  updatedAt?: number;
+  deletedAt?: number;
+}
+
+// Payroll types
+export interface Employee {
+  id: string;
+  name: string;
+  salary: number;
+  currency: string;
+  payDay: number; // day of month 1-31
+  createdAt: string;
+  updatedAt?: number;
+  deletedAt?: number;
+}
+
+export interface Advance {
+  id: string;
+  employeeId: string;
+  amount: number;
+  date: string; // ISO date when advance was given
+  settled: boolean;
+  settledAt?: string; // ISO date when deducted from paycheck
   createdAt: string;
   updatedAt?: number;
   deletedAt?: number;
