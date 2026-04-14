@@ -181,7 +181,7 @@ export default function EmployeeDetail({
             >
               <Plus size={16} /> Record Advance
             </button>
-            {pendingAdvances.length > 0 && (
+            {pendingAdvances.length > 0 && new Date().getDate() >= employee.payDay && (
               <button
                 onClick={() => setShowSettleConfirm(true)}
                 className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-bold bg-primary/10 text-primary hover:bg-primary/20 active:scale-[0.98] transition-all"

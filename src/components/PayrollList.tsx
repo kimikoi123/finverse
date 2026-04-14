@@ -70,7 +70,10 @@ export default function PayrollList({ employees, totalPendingAdvances, onAdd, on
                 <div className="text-right flex-shrink-0">
                   <div className="text-sm font-semibold text-text-primary">{formatAmount(emp.salary, emp.currency)}</div>
                   {pending > 0 ? (
-                    <div className="text-[11px] text-danger font-medium">-{formatAmount(pending, emp.currency)} advances</div>
+                    <>
+                      <div className="text-[11px] text-danger font-medium">-{formatAmount(pending, emp.currency)} advances</div>
+                      <div className="text-[11px] text-text-secondary">Net: {formatAmount(emp.salary - pending, emp.currency)}</div>
+                    </>
                   ) : (
                     <div className="text-[11px] text-success font-medium">No advances</div>
                   )}
