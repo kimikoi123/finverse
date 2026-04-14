@@ -1,7 +1,7 @@
 import { db } from './database';
 import { hasIdentity } from '../sync/deviceIdentity';
 import { fetchPrivateBlobAsObjectUrl } from '../sync/syncApi';
-import type { Trip, TripState, DeletedTrip, ExchangeRates, Transaction, UserPreferences, Account, Budget, Goal, DebtEntry, Installment, SyncEntityType } from '../types';
+import type { Trip, TripState, DeletedTrip, ExchangeRates, Transaction, UserPreferences, Account, Budget, Goal, DebtEntry, Installment, Employee, Advance, SyncEntityType } from '../types';
 
 // Sync helpers: every write goes through these so `updatedAt` is always stamped
 // and deletes become tombstones instead of hard removals. The sync engine relies
@@ -369,4 +369,47 @@ export async function updateInstallment(id: string, updates: Partial<Installment
 export async function deleteInstallment(id: string): Promise<void> {
   await db.installments.update(id, tombstoneUpdate());
   await enqueuePush('installment', id);
+}
+
+// Employees
+export async function loadEmployees(): Promise<Employee[]> {
+  const all = await db.employees.toArray();
+  return all.filter((e) => !e.deletedAt);
+}
+export async function addEmployee(employee: Employee): Promise<void> {
+  await db.employees.put(stampWrite(employee));
+  await enqueuePush('employee', employee.id);
+}
+export async function updateEmployee(id: string, updates: Partial<Employee>): Promise<void> {
+  await db.employees.update(id, stampUpdate(updates));
+  await enqueuePush('employee', id);
+}
+export async function deleteEmployee(id: string): Promise<void> {
+  await db.employees.update(id, tombstoneUpdate());
+  await enqueuePush('employee', id);
+}
+
+// Advances
+export async function loadAdvances(): Promise<Advance[]> {
+  const all = await db.advances.toArray();
+  return all.filter((a) => !a.deletedAt);
+}
+export async function addAdvance(advance: Advance): Promise<void> {
+  await db.advances.put(stampWrite(advance));
+  await enqueuePush('advance', advance.id);
+}
+export async function updateAdvance(id: string, updates: Partial<Advance>): Promise<void> {
+  await db.advances.update(id, stampUpdate(updates));
+  await enqueuePush('advance', id);
+}
+export async function deleteAdvance(id: string): Promise<void> {
+  await db.advances.update(id, tombstoneUpdate());
+  await enqueuePush('advance', id);
+}
+export async function settleAdvances(ids: string[]): Promise<void> {
+  const now = new Date().toISOString();
+  for (const id of ids) {
+    await db.advances.update(id, stampUpdate({ settled: true, settledAt: now }));
+    await enqueuePush('advance', id);
+  }
 }
