@@ -39,16 +39,52 @@ let periodicHandle: ReturnType<typeof setInterval> | null = null;
 let unsubscribeMutations: (() => void) | null = null;
 let started = false;
 
+// One-time-per-device sync repairs. Each `if (at < N)` block runs once
+// when the device's stored marker is below N. Bump SYNC_REPAIR_TARGET
+// monotonically; never reuse a version number.
+const SYNC_REPAIR_KEY = 'finverse.syncRepairVersion';
+const SYNC_REPAIR_TARGET = 1;
+
+async function runSyncRepairs(): Promise<void> {
+  const raw = localStorage.getItem(SYNC_REPAIR_KEY);
+  const parsed = raw ? Number(raw) : 0;
+  const at = Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
+  if (at >= SYNC_REPAIR_TARGET) return;
+
+  // v1: payroll entities (employee/advance) were wired into push and
+  // pull in commits 5a0ab16 → 246aaa9, 23 minutes apart. Devices that
+  // pulled in the gap silently dropped payroll rows but still advanced
+  // lastPulledAt past them, and the server's strict `updated_at > since`
+  // filter means those rows can never be re-fetched. Fix: reset the
+  // watermark so pull re-fetches everything (LWW preserves newer
+  // locals), and re-enqueue every local row so any push-dropped ones
+  // reach the server (LWW rejects stale writes cleanly).
+  if (at < 1) {
+    if (hasIdentity()) {
+      setLastPulledAt(0);
+      await enqueueAllLocalRows();
+    }
+  }
+
+  localStorage.setItem(SYNC_REPAIR_KEY, String(SYNC_REPAIR_TARGET));
+}
+
 // Public: kick off background sync lifecycle. Idempotent.
 export function start(): void {
   if (started) return;
   started = true;
   void refreshStateFromIdentity();
   installTriggers();
-  // Initial sync on mount if we have an identity
-  if (hasIdentity()) {
-    void sync();
-  }
+  void (async () => {
+    try {
+      await runSyncRepairs();
+    } catch (err) {
+      console.error('Sync repair failed:', err);
+    }
+    if (hasIdentity()) {
+      void sync();
+    }
+  })();
 }
 
 export function stop(): void {
