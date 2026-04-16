@@ -675,6 +675,7 @@ function App() {
         <CreateBudgetFlow
           mode={showCreateBudget.mode}
           existingBudgets={budgetsWithSpending}
+          accounts={accounts.map((a) => ({ id: a.id, name: a.name }))}
           onSave={handleSaveBudget}
           onCancel={() => { setShowCreateBudget(null); setEditingBudget(null); }}
           editingBudget={editingBudget ?? undefined}
