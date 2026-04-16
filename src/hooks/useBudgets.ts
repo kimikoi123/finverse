@@ -7,11 +7,16 @@ import {
   deleteBudget as dbDeleteBudget,
 } from '../db/storage';
 import { useRefreshOnRemote } from './useRefreshOnRemote';
+import { deriveCommitmentState } from '../utils/commitmentBudgets';
 
 export interface BudgetWithSpending extends Budget {
   spent: number;
   remaining: number;
   percentage: number;
+
+  // Only populated when isCommitment === true
+  isPendingThisMonth?: boolean;
+  nextDueDate?: string;
 }
 
 export function useBudgets(transactions: Transaction[]) {
@@ -73,7 +78,19 @@ export function useBudgets(transactions: Transaction[]) {
       }
       const remaining = Math.max(0, budget.monthlyLimit - spent);
       const percentage = budget.monthlyLimit > 0 ? (spent / budget.monthlyLimit) * 100 : 0;
-      return { ...budget, spent, remaining, percentage };
+
+      const commitmentState = budget.isCommitment
+        ? deriveCommitmentState(budget, now)
+        : { isPendingThisMonth: false, nextDueDate: undefined };
+
+      return {
+        ...budget,
+        spent,
+        remaining,
+        percentage,
+        isPendingThisMonth: commitmentState.isPendingThisMonth,
+        nextDueDate: commitmentState.nextDueDate,
+      };
     });
   }, [budgets, transactions]);
 
