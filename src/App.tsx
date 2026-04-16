@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTrip } from './hooks/useTrip';
 import { useExchangeRates } from './hooks/useExchangeRates';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
@@ -83,7 +83,15 @@ function App() {
   const { transactions, addTransaction, editTransaction, removeTransaction } = useTransactions();
   const { preferences, loading: prefsLoading, updatePreferences } = useUserPreferences();
   const { accounts, netWorth, addAccount, editAccount, removeAccount, reorderAccounts } = useAccounts();
-  const { budgets: budgetsWithSpending, addBudget, editBudget, removeBudget } = useBudgets(transactions);
+  const { budgets: budgetsWithSpending, loading: budgetsLoading, addBudget, editBudget, removeBudget, runAutoConfirmOnce } = useBudgets(transactions);
+
+  const hasRunAutoConfirm = useRef(false);
+  useEffect(() => {
+    if (hasRunAutoConfirm.current) return;
+    if (budgetsLoading) return;  // budgets still loading
+    hasRunAutoConfirm.current = true;
+    void runAutoConfirmOnce(addTransaction);
+  }, [budgetsLoading, runAutoConfirmOnce, addTransaction]);
   const { goals, addGoal, editGoal, removeGoal } = useGoals();
   const { debts, addDebt, editDebt, removeDebt } = useDebts();
   const { installments, addInstallment, editInstallment, removeInstallment } = useInstallments();

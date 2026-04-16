@@ -7,7 +7,7 @@ import {
   deleteBudget as dbDeleteBudget,
 } from '../db/storage';
 import { useRefreshOnRemote } from './useRefreshOnRemote';
-import { deriveCommitmentState } from '../utils/commitmentBudgets';
+import { deriveCommitmentState, planAutoConfirm } from '../utils/commitmentBudgets';
 
 export interface BudgetWithSpending extends Budget {
   spent: number;
@@ -94,5 +94,19 @@ export function useBudgets(transactions: Transaction[]) {
     });
   }, [budgets, transactions]);
 
-  return { budgets: budgetsWithSpending, loading, addBudget, editBudget, removeBudget };
+  const runAutoConfirmOnce = useCallback(
+    async (addTransaction: (txn: Omit<Transaction, 'id' | 'createdAt'>) => Promise<Transaction>) => {
+      const plan = planAutoConfirm(budgets, new Date());
+      if (plan.length === 0) return;
+      for (const action of plan) {
+        await addTransaction(action.transaction);
+        await dbUpdateBudget(action.budgetId, { lastConfirmedMonth: action.newLastConfirmedMonth });
+      }
+      // Refresh local budget state to pick up lastConfirmedMonth stamps
+      await refresh();
+    },
+    [budgets, refresh]
+  );
+
+  return { budgets: budgetsWithSpending, loading, addBudget, editBudget, removeBudget, runAutoConfirmOnce };
 }
