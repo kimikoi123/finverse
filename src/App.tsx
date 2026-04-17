@@ -44,6 +44,7 @@ import EmployeeForm from './components/EmployeeForm';
 import EmployeeDetail from './components/EmployeeDetail';
 import CashflowForecast from './components/CashflowForecast';
 import PlannedPayments from './components/PlannedPayments';
+import ConfirmBillDialog from './components/ConfirmBillDialog';
 import SettingsScreen from './components/Settings';
 import PHTaxCalculator from './components/PHTaxCalculator';
 import { useGoals } from './hooks/useGoals';
@@ -122,9 +123,7 @@ function App() {
   const [showTransferForm, setShowTransferForm] = useState(false);
   const [refreshingPrice, setRefreshingPrice] = useState(false);
   const [showBudgetList, setShowBudgetList] = useState(false);
-  // pendingConfirmBill is consumed in Task 10 (ConfirmBillDialog)
   const [pendingConfirmBill, setPendingConfirmBill] = useState<BudgetWithSpending | null>(null);
-  void pendingConfirmBill; // Task 10 will render <ConfirmBillDialog> using this
   const [showCreateBudget, setShowCreateBudget] = useState<{ mode: 'category' | 'custom' } | null>(null);
   const [editingBudget, setEditingBudget] = useState<Budget | null>(null);
   const [showGoalList, setShowGoalList] = useState(false);
@@ -684,6 +683,28 @@ function App() {
           onSave={handleSaveBudget}
           onCancel={() => { setShowCreateBudget(null); setEditingBudget(null); }}
           editingBudget={editingBudget ?? undefined}
+        />
+      )}
+
+      {pendingConfirmBill && (
+        <ConfirmBillDialog
+          budget={pendingConfirmBill}
+          accounts={accounts.map((a) => ({ id: a.id, name: a.name }))}
+          onClose={() => setPendingConfirmBill(null)}
+          onSkip={() => {
+            const remaining = budgetsWithSpending.filter(
+              (b) => b.isPendingThisMonth && b.id !== pendingConfirmBill.id
+            );
+            setPendingConfirmBill(remaining[0] ?? null);
+          }}
+          onConfirm={async (txn, newLastConfirmedMonth) => {
+            await addTransaction(txn);
+            await editBudget(pendingConfirmBill.id, { lastConfirmedMonth: newLastConfirmedMonth });
+            const remaining = budgetsWithSpending.filter(
+              (b) => b.isPendingThisMonth && b.id !== pendingConfirmBill.id
+            );
+            setPendingConfirmBill(remaining[0] ?? null);
+          }}
         />
       )}
 
