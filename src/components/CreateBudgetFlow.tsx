@@ -198,6 +198,7 @@ export default function CreateBudgetFlow({
           dueDay: parseInt(dueDay, 10),
           varies,
           sourceAccountId: sourceAccountId || undefined,
+          lastConfirmedMonth: editingBudget?.lastConfirmedMonth,
         }
       : {};
 

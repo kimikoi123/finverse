@@ -4,6 +4,7 @@ import type { Budget } from '../types';
 import type { BudgetWithSpending } from '../hooks/useBudgets';
 import { formatCurrency } from '../utils/currencies';
 import { getBudgetPreset } from '../utils/budgetPresets';
+import { monthKey } from '../utils/commitmentBudgets';
 import ConfirmDialog from './ui/ConfirmDialog';
 import LogoBadge from './ui/LogoBadge';
 
@@ -41,7 +42,7 @@ function CommitmentCard({
   onConfirm: () => void;
 }) {
   const confirmedThisMonth =
-    budget.lastConfirmedMonth === new Date().toISOString().slice(0, 7);
+    budget.lastConfirmedMonth === monthKey(new Date());
   const isPending = budget.isPendingThisMonth === true;
 
   const secondary: { text: string; pill?: { label: string; tone: 'amber' | 'success' } } = (() => {
