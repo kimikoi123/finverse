@@ -469,6 +469,8 @@ function App() {
             defaultCurrency={preferences.defaultCurrency}
             paydayConfig={preferences.paydayConfig}
             onQuickAdd={handleQuickAdd}
+            pendingCommitments={budgetsWithSpending.filter((b) => b.isPendingThisMonth === true)}
+            onConfirmCommitment={(b) => setPendingConfirmBill(b)}
           />
         )}
         {!showSettings && activeTab === 'wallet' && (

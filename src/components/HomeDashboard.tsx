@@ -8,6 +8,7 @@ import { getNearestPayday } from '../utils/payday';
 import QuickAddBar from './QuickAddBar';
 import SpendingHeatmap from './SpendingHeatmap';
 import type { ParsedTransaction } from '../utils/transactionParser';
+import type { BudgetWithSpending } from '../hooks/useBudgets';
 
 interface HomeDashboardProps {
   displayName: string;
@@ -15,6 +16,8 @@ interface HomeDashboardProps {
   defaultCurrency: string;
   paydayConfig?: PaydayConfig;
   onQuickAdd?: (parsed: ParsedTransaction) => void;
+  pendingCommitments: BudgetWithSpending[];
+  onConfirmCommitment: (budget: BudgetWithSpending) => void;
 }
 
 function getGreeting(): string {
@@ -55,6 +58,8 @@ export default function HomeDashboard({
   defaultCurrency,
   paydayConfig,
   onQuickAdd,
+  pendingCommitments,
+  onConfirmCommitment,
 }: HomeDashboardProps) {
   const [period, setPeriod] = useState<'day' | 'week' | 'month'>(() => {
     try {
@@ -255,6 +260,28 @@ export default function HomeDashboard({
 
       {/* Quick Add */}
       {onQuickAdd && <QuickAddBar onParsed={onQuickAdd} />}
+
+      {/* Pending Bills Banner */}
+      {pendingCommitments.length > 0 && (
+        <button
+          type="button"
+          onClick={() => onConfirmCommitment(pendingCommitments[0]!)}
+          className="w-full mb-3 bg-amber-500/10 border border-amber-500/30 rounded-2xl p-3 flex items-center justify-between text-left hover:bg-amber-500/15 transition-colors"
+        >
+          <div>
+            <p className="text-sm font-semibold text-amber-700">
+              {pendingCommitments.length === 1
+                ? '1 bill needs confirmation'
+                : `${pendingCommitments.length} bills need confirmation`}
+            </p>
+            <p className="text-xs text-amber-700/80 mt-0.5">
+              {pendingCommitments[0]!.name}
+              {pendingCommitments.length > 1 ? ` + ${pendingCommitments.length - 1} more` : ''}
+            </p>
+          </div>
+          <span className="text-sm font-semibold text-amber-700">Review →</span>
+        </button>
+      )}
 
       {/* 2. Spending Summary Row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
