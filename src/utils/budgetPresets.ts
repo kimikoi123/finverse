@@ -15,6 +15,7 @@ export const BUDGET_PRESETS: BudgetPreset[] = [
   { key: 'prime-video', name: 'Prime Video', color: '#00a8e1', category: 'subscription', logo: 'https://www.google.com/s2/favicons?domain=primevideo.com&sz=128' },
   { key: 'apple-music', name: 'Apple Music', color: '#fa243c', category: 'subscription', logo: 'https://www.google.com/s2/favicons?domain=music.apple.com&sz=128' },
   { key: 'chatgpt', name: 'ChatGPT', color: '#10a37f', category: 'subscription', logo: 'https://www.google.com/s2/favicons?domain=chatgpt.com&sz=128' },
+  { key: 'claude', name: 'Claude', color: '#cc785c', category: 'subscription', logo: 'https://www.google.com/s2/favicons?domain=claude.ai&sz=128' },
   { key: 'canva', name: 'Canva', color: '#00c4cc', category: 'subscription', logo: 'https://www.google.com/s2/favicons?domain=canva.com&sz=128' },
   { key: 'google-one', name: 'Google One', color: '#4285f4', category: 'subscription', logo: 'https://www.google.com/s2/favicons?domain=one.google.com&sz=128' },
   { key: 'dropbox', name: 'Dropbox', color: '#0061ff', category: 'subscription', logo: 'https://www.google.com/s2/favicons?domain=dropbox.com&sz=128' },
