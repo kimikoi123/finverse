@@ -66,11 +66,21 @@ function CommitmentCard({
       ? 'bg-amber-500/15 text-amber-600'
       : 'bg-success/15 text-success';
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (!isPending) return;
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onConfirm();
+    }
+  };
+
   return (
-    <button
-      type="button"
+    <div
       onClick={isPending ? onConfirm : undefined}
-      disabled={!isPending}
+      onKeyDown={isPending ? handleKeyDown : undefined}
+      role={isPending ? 'button' : undefined}
+      tabIndex={isPending ? 0 : undefined}
+      aria-label={isPending ? `Confirm bill for ${budget.name}` : undefined}
       className={`bg-surface rounded-2xl border border-white/[0.06] p-4 flex items-start gap-3 text-left transition-all ${
         isPending ? 'hover:bg-surface-hover active:scale-[0.98] cursor-pointer' : 'cursor-default'
       }`}
@@ -101,7 +111,7 @@ function CommitmentCard({
         </div>
         <p className="text-xs text-text-secondary mt-0.5">{secondary.text}</p>
       </div>
-      <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+      <div className="flex items-center gap-1 shrink-0">
         <button
           type="button"
           onClick={(e) => { e.stopPropagation(); onEdit(); }}
@@ -119,7 +129,7 @@ function CommitmentCard({
           <Trash2 className="w-4 h-4" />
         </button>
       </div>
-    </button>
+    </div>
   );
 }
 
