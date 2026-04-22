@@ -10,7 +10,7 @@ interface EmployeeDetailProps {
   onBack: () => void;
   onEdit: () => void;
   onDelete: () => void;
-  onAddAdvance: (employeeId: string, amount: number) => Promise<Advance>;
+  onAddAdvance: (employeeId: string, amount: number) => Promise<Advance[]>;
   onRemoveAdvance: (id: string) => Promise<void>;
   onSettle: (employeeId: string) => Promise<void>;
   formatAmount: (amount: number, currency: string) => string;
@@ -93,16 +93,29 @@ export default function EmployeeDetail({
     () => advances.filter((a) => !a.settled),
     [advances],
   );
-  const totalPending = pendingAdvances.reduce((s, a) => s + a.amount, 0);
-  const remaining = employee.salary - totalPending;
+  const now = new Date();
+  const currentMonthPendingList = useMemo(
+    () =>
+      pendingAdvances.filter((a) => {
+        const d = new Date(a.date);
+        return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+      }),
+    [pendingAdvances, now],
+  );
+  const currentMonthPending = currentMonthPendingList.reduce((s, a) => s + a.amount, 0);
+  const currentMonthRemaining = Math.max(0, employee.salary - currentMonthPending);
+  const nextMonthDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  const nextMonthLabel = nextMonthDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   const monthGroups = useMemo(
     () => groupAdvancesByMonth(advances, employee.salary),
     [advances, employee.salary],
   );
 
   const parsedAdvance = parseAmountInput(advanceAmount);
-  const advanceExceedsSalary = parsedAdvance > 0 && parsedAdvance > remaining;
-  const canAddAdvance = parsedAdvance > 0 && !advanceExceedsSalary;
+  const carryAmount = Math.max(0, parsedAdvance - currentMonthRemaining);
+  const currentPortion = Math.min(parsedAdvance, currentMonthRemaining);
+  const willCarryOver = parsedAdvance > 0 && carryAmount > 0;
+  const canAddAdvance = parsedAdvance > 0;
 
   const handleAddAdvance = async () => {
     if (!canAddAdvance) return;
@@ -152,9 +165,18 @@ export default function EmployeeDetail({
               autoFocus
               className="w-full bg-bg border border-border rounded-xl py-3 px-4 text-sm text-text-primary placeholder:text-text-secondary/30 focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 transition-all mb-2"
             />
-            {advanceExceedsSalary && (
-              <p className="text-xs text-danger mb-2">
-                This would exceed {employee.name}&apos;s remaining salary of {formatAmount(remaining, employee.currency)}
+            {willCarryOver && (
+              <p className="text-xs text-text-secondary mb-2">
+                {currentPortion > 0 ? (
+                  <>
+                    {formatAmount(currentPortion, employee.currency)} applies this month.{' '}
+                    {formatAmount(carryAmount, employee.currency)} will carry to {nextMonthLabel}.
+                  </>
+                ) : (
+                  <>
+                    This month is fully advanced. {formatAmount(carryAmount, employee.currency)} will carry to {nextMonthLabel}.
+                  </>
+                )}
               </p>
             )}
             <div className="flex gap-2">
@@ -181,7 +203,7 @@ export default function EmployeeDetail({
             >
               <Plus size={16} /> Record Advance
             </button>
-            {pendingAdvances.length > 0 && new Date().getDate() >= employee.payDay && (
+            {currentMonthPendingList.length > 0 && new Date().getDate() >= employee.payDay && (
               <button
                 onClick={() => setShowSettleConfirm(true)}
                 className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-bold bg-primary/10 text-primary hover:bg-primary/20 active:scale-[0.98] transition-all"
@@ -208,7 +230,7 @@ export default function EmployeeDetail({
                     {' — Advance '}
                     <span className="font-medium text-text-primary">{formatAmount(adv.amount, employee.currency)}</span>
                   </div>
-                  {!adv.settled && group.isCurrent && (
+                  {!adv.settled && (
                     <button
                       onClick={() => onRemoveAdvance(adv.id)}
                       className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-danger/10 text-text-secondary hover:text-danger transition-colors"
@@ -225,9 +247,14 @@ export default function EmployeeDetail({
                 Settled {new Date(group.settledAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} — Paid {formatAmount(group.netPay, employee.currency)}
               </div>
             )}
-            {group.isCurrent && pendingAdvances.length > 0 && (
+            {group.isCurrent && currentMonthPending > 0 && (
               <div className="text-sm font-semibold text-primary mt-2">
-                Net: {formatAmount(employee.salary - totalPending, employee.currency)}
+                Net: {formatAmount(employee.salary - currentMonthPending, employee.currency)}
+              </div>
+            )}
+            {!group.isCurrent && !group.settledAt && group.advances.length > 0 && (
+              <div className="text-xs text-text-secondary mt-1">
+                Projected net: {formatAmount(group.netPay, employee.currency)}
               </div>
             )}
           </div>
@@ -246,7 +273,7 @@ export default function EmployeeDetail({
       {showSettleConfirm && (
         <ConfirmDialog
           title="Settle Payday"
-          message={`Pay ${employee.name} ${formatAmount(employee.salary - totalPending, employee.currency)}? (Salary ${formatAmount(employee.salary, employee.currency)} minus ${formatAmount(totalPending, employee.currency)} in advances)`}
+          message={`Pay ${employee.name} ${formatAmount(employee.salary - currentMonthPending, employee.currency)}? (Salary ${formatAmount(employee.salary, employee.currency)} minus ${formatAmount(currentMonthPending, employee.currency)} in advances)`}
           confirmLabel="Settle"
           onConfirm={handleSettle}
           onCancel={() => setShowSettleConfirm(false)}
