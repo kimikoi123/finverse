@@ -3,6 +3,7 @@ import { getFinanceCategoryDef } from './categories';
 import { convertToBase } from './currencies';
 import { getPaydayOccurrences } from './payday';
 import { resolveDueDate } from './commitmentBudgets';
+import { estimateMonthlyBaseline } from './baseline';
 
 // --- Recurring occurrence helpers ---
 
@@ -246,6 +247,8 @@ export interface ForecastTimeline {
   minBalance: number;           // lowest running balance reached in the window
   minBalanceDate: Date | null;  // null means the starting balance is the minimum
   dailyBalances: DailyBalance[]; // one entry per day from today through today+windowDays (inclusive)
+  estimatedMonthlyOut: number;  // baseline (variable spending not covered by events), default currency
+  estimatedWindowOut: number;   // estimatedMonthlyOut prorated over windowDays, default currency
 }
 
 /** Monthly-only next occurrence (used for payday, installments, credit cards) */
@@ -268,6 +271,8 @@ export function computeTimeline(params: {
   exchangeRates: ExchangeRates | null;
   windowDays?: number;
   today?: Date; // override for testing
+  includeBaseline?: boolean; // bleed historical variable-spend into dailyBalances (default true)
+  baselineMonthsLookback?: number;
 }): ForecastTimeline {
   const {
     transactions,
@@ -280,6 +285,8 @@ export function computeTimeline(params: {
     exchangeRates,
     windowDays = 30,
     today: todayOpt,
+    includeBaseline = true,
+    baselineMonthsLookback = 3,
   } = params;
 
   const today = todayOpt ? (() => { const d = new Date(todayOpt); d.setHours(0, 0, 0, 0); return d; })() : startOfToday();
@@ -473,6 +480,20 @@ export function computeTimeline(params: {
     }, 0);
   const net = totalIn - totalOut;
 
+  // Historical-baseline burn — estimates daily variable-spend from expenses
+  // not already covered by recurring txns or commitment budgets.
+  const baseline = includeBaseline
+    ? estimateMonthlyBaseline({
+        transactions,
+        budgets,
+        today,
+        defaultCurrency,
+        exchangeRates,
+        monthsLookback: baselineMonthsLookback,
+      })
+    : { totalMonthly: 0, byCategory: {}, monthsUsed: 0 };
+  const dailyBurn = baseline.totalMonthly / 30;
+
   // Running-balance walk — produce per-day balances and find the worst-day dip.
   const dailyBalances: DailyBalance[] = [];
   let running = startingBalance;
@@ -499,8 +520,21 @@ export function computeTimeline(params: {
       }
       eventIdx++;
     }
+    // Apply one day's baseline burn (not for i=0 — today hasn't "passed" yet).
+    if (i > 0 && dailyBurn > 0) {
+      running -= dailyBurn;
+      if (running < minBalance) {
+        minBalance = running;
+        minBalanceDate = day;
+      }
+    }
     dailyBalances.push({ date: day, balance: running });
   }
+
+  const estimatedWindowOut = dailyBurn * windowDays;
+  const projectedBalance = dailyBalances.length > 0
+    ? dailyBalances[dailyBalances.length - 1]!.balance
+    : startingBalance + net;
 
   return {
     events,
@@ -508,9 +542,11 @@ export function computeTimeline(params: {
     totalOut,
     net,
     startingBalance,
-    projectedBalance: startingBalance + net,
+    projectedBalance,
     minBalance,
     minBalanceDate,
     dailyBalances,
+    estimatedMonthlyOut: baseline.totalMonthly,
+    estimatedWindowOut,
   };
 }

@@ -333,6 +333,69 @@ describe('computeTimeline – running balance (minBalance)', () => {
   });
 });
 
+describe('computeTimeline – baseline bleed', () => {
+  it('returns zero baseline when no history', () => {
+    const today = new Date(2026, 3, 22);
+    const result = computeTimeline({
+      ...baseParams(today),
+      accounts: [makeAccount({ balance: 5000 })],
+    });
+    expect(result.estimatedMonthlyOut).toBe(0);
+    expect(result.estimatedWindowOut).toBe(0);
+    expect(result.dailyBalances[30]!.balance).toBe(5000); // flat, no bleed
+  });
+
+  it('bleeds estimated monthly spend into dailyBalances', () => {
+    const today = new Date(2026, 3, 22);
+    // 3000 in Feb + 3000 in Mar = 6000 over 2 months → 3000/mo avg → 100/day burn
+    const result = computeTimeline({
+      ...baseParams(today),
+      accounts: [makeAccount({ balance: 5000 })],
+      transactions: [
+        makeTxn({ id: 'h1', amount: 3000, date: '2026-02-10' }),
+        makeTxn({ id: 'h2', amount: 3000, date: '2026-03-10' }),
+      ],
+      windowDays: 30,
+    });
+    expect(result.estimatedMonthlyOut).toBe(3000);
+    expect(result.estimatedWindowOut).toBe(3000);
+    // Starting 5000, burn 100/day for 30 days → 2000 on final day
+    expect(result.dailyBalances[0]!.balance).toBe(5000);
+    expect(result.dailyBalances[30]!.balance).toBeCloseTo(2000, 5);
+    expect(result.projectedBalance).toBeCloseTo(2000, 5);
+  });
+
+  it('captures worst-day after continuous burn drives balance negative', () => {
+    const today = new Date(2026, 3, 22);
+    // 3000/mo avg burn; starting 1000 → negative after 10 days
+    const result = computeTimeline({
+      ...baseParams(today),
+      accounts: [makeAccount({ balance: 1000 })],
+      transactions: [
+        makeTxn({ id: 'h1', amount: 3000, date: '2026-02-10' }),
+        makeTxn({ id: 'h2', amount: 3000, date: '2026-03-10' }),
+      ],
+      windowDays: 30,
+    });
+    expect(result.minBalance).toBeLessThan(0);
+    expect(result.minBalanceDate).not.toBeNull();
+  });
+
+  it('includeBaseline=false disables bleed', () => {
+    const today = new Date(2026, 3, 22);
+    const result = computeTimeline({
+      ...baseParams(today),
+      accounts: [makeAccount({ balance: 5000 })],
+      transactions: [
+        makeTxn({ id: 'h1', amount: 3000, date: '2026-03-10' }),
+      ],
+      includeBaseline: false,
+    });
+    expect(result.estimatedMonthlyOut).toBe(0);
+    expect(result.dailyBalances[30]!.balance).toBe(5000);
+  });
+});
+
 describe('computeTimeline – dailyBalances', () => {
   it('has windowDays+1 entries (today through today+window)', () => {
     const today = new Date(2026, 3, 10);

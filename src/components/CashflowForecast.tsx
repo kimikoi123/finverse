@@ -3,6 +3,7 @@ import { ArrowLeft } from 'lucide-react';
 import type { Transaction, Installment, DebtEntry, Account, Budget, ExchangeRates, PaydayConfig } from '../types';
 import { formatCurrency } from '../utils/currencies';
 import { computeTimeline, type ForecastEvent, type DailyBalance } from '../utils/forecast';
+import { convertToBase } from '../utils/currencies';
 
 interface CashflowForecastProps {
   transactions: Transaction[];
@@ -261,6 +262,19 @@ export default function CashflowForecast({
   const netPositive = timeline.net >= 0;
   const projectedPositive = timeline.projectedBalance >= 0;
 
+  const creditDebt = useMemo(
+    () =>
+      accounts
+        .filter((a) => a.type === 'credit' && a.balance > 0)
+        .reduce((sum, a) => {
+          const bal = a.currency === defaultCurrency
+            ? a.balance
+            : convertToBase(a.balance, a.currency, defaultCurrency, exchangeRates);
+          return sum + bal;
+        }, 0),
+    [accounts, defaultCurrency, exchangeRates],
+  );
+
   return (
     <div className="max-w-2xl mx-auto w-full p-4 sm:p-6 animate-slide-in-right">
       {/* Header */}
@@ -287,13 +301,18 @@ export default function CashflowForecast({
         </p>
         <div className="flex items-end justify-between gap-4">
           <div className="min-w-0">
-            <p className="text-xs text-text-secondary mb-0.5">Today</p>
+            <p className="text-xs text-text-secondary mb-0.5">Cash today</p>
             <p
               className={`text-lg font-bold ${timeline.startingBalance >= 0 ? 'text-text-primary' : 'text-danger'}`}
               style={{ fontVariantNumeric: 'tabular-nums' }}
             >
               {timeline.startingBalance < 0 && '-'}{formatCurrency(Math.abs(timeline.startingBalance), defaultCurrency)}
             </p>
+            {creditDebt > 0 && (
+              <p className="text-[10px] text-text-tertiary mt-0.5" style={{ fontVariantNumeric: 'tabular-nums' }}>
+                −{formatCurrency(creditDebt, defaultCurrency)} on cards
+              </p>
+            )}
           </div>
           <div className="text-text-tertiary text-lg shrink-0">→</div>
           <div className="min-w-0 text-right">
@@ -310,7 +329,16 @@ export default function CashflowForecast({
           daily={timeline.dailyBalances}
           worstDate={timeline.minBalanceDate}
         />
-        <div className="flex items-center justify-end gap-1.5 mt-1">
+        <div className="flex items-center justify-between gap-2 mt-1">
+          {timeline.estimatedMonthlyOut > 0 ? (
+            <span
+              className="text-[10px] text-text-tertiary"
+              style={{ fontVariantNumeric: 'tabular-nums' }}
+              title="Estimated from your last 3 months of variable spending"
+            >
+              ≈ -{formatCurrency(timeline.estimatedMonthlyOut, defaultCurrency)}/mo est. spend
+            </span>
+          ) : <span />}
           <span
             className={`text-xs font-semibold ${netPositive ? 'text-success' : 'text-danger'}`}
             style={{ fontVariantNumeric: 'tabular-nums' }}
