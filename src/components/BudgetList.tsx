@@ -75,12 +75,21 @@ function CommitmentCard({
         isPending ? 'hover:bg-surface-hover active:scale-[0.98] cursor-pointer' : 'cursor-default'
       }`}
     >
-      <LogoBadge
-        logo={budget.preset ? getBudgetPreset(budget.preset)?.logo : undefined}
-        name={budget.name}
-        color={budget.color}
-        size="md"
-      />
+      {budget.type === 'category' ? (
+        <div
+          className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-sm"
+          style={{ backgroundColor: budget.color }}
+        >
+          {budget.icon}
+        </div>
+      ) : (
+        <LogoBadge
+          logo={budget.preset ? getBudgetPreset(budget.preset)?.logo : undefined}
+          name={budget.name}
+          color={budget.color}
+          size="md"
+        />
+      )}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <p className="text-sm font-semibold text-text-primary truncate">{budget.name}</p>
@@ -199,9 +208,9 @@ export default function BudgetList({
   onBack,
 }: BudgetListProps) {
   const [pendingDelete, setPendingDelete] = useState<BudgetWithSpending | null>(null);
-  const commitmentBudgets = budgets.filter((b) => b.type === 'custom' && b.isCommitment === true);
+  const commitmentBudgets = budgets.filter((b) => b.isCommitment === true);
   const flexibleCustomBudgets = budgets.filter((b) => b.type === 'custom' && b.isCommitment !== true);
-  const categoryBudgets = budgets.filter((b) => b.type === 'category');
+  const categoryBudgets = budgets.filter((b) => b.type === 'category' && b.isCommitment !== true);
   const hasNoBudgets = budgets.length === 0;
 
   return (

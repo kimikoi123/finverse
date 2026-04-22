@@ -40,12 +40,6 @@ function defaultVariesForPreset(preset: BudgetPreset): boolean {
   return preset.category === 'telecom' || preset.category === 'utility';
 }
 
-function isPresetKeyCommitmentCapable(presetKey: string | undefined): boolean {
-  if (!presetKey) return false;
-  const preset = BUDGET_PRESETS.find((p) => p.key === presetKey);
-  return preset ? COMMITMENT_PRESET_CATEGORIES.includes(preset.category) : false;
-}
-
 export default function CreateBudgetFlow({
   mode,
   existingBudgets,
@@ -96,6 +90,9 @@ export default function CreateBudgetFlow({
     () => editingBudget?.color ?? ACCOUNT_COLORS[0] ?? '#2d6a4f'
   );
 
+  const [commitmentEnabled, setCommitmentEnabled] = useState<boolean>(
+    () => editingBudget?.isCommitment === true
+  );
   const [dueDay, setDueDay] = useState<string>(() => {
     if (isEditing && editingBudget.dueDay !== undefined) return String(editingBudget.dueDay);
     return '';
@@ -126,16 +123,11 @@ export default function CreateBudgetFlow({
 
   const parsedAmount = parseAmountInput(amount);
 
-  const isCommitmentMode =
-    (mode === 'custom' && isCommitmentPreset(selectedPreset)) ||
-    (isEditing && editingBudget.isCommitment === true) ||
-    (isEditing && isPresetKeyCommitmentCapable(editingBudget.preset));
-
   const canSave = (() => {
     if (parsedAmount <= 0) return false;
-    if (mode === 'category') return selectedCategory !== null;
-    if (name.trim().length === 0) return false;
-    if (isCommitmentMode) {
+    if (mode === 'category' && selectedCategory === null) return false;
+    if (mode === 'custom' && name.trim().length === 0) return false;
+    if (commitmentEnabled) {
       const d = parseInt(dueDay, 10);
       if (!Number.isFinite(d) || d < 1 || d > 31) return false;
     }
@@ -152,6 +144,7 @@ export default function CreateBudgetFlow({
     setName(preset.name);
     setSelectedColor(preset.color);
     setVaries(defaultVariesForPreset(preset));
+    setCommitmentEnabled(isCommitmentPreset(preset));
     setStep(2);
   }, []);
 
@@ -160,6 +153,7 @@ export default function CreateBudgetFlow({
     setIsCustomEntry(true);
     setName('');
     setSelectedColor(ACCOUNT_COLORS[0] ?? '#2d6a4f');
+    setCommitmentEnabled(false);
     setStep(2);
   }, []);
 
@@ -178,21 +172,7 @@ export default function CreateBudgetFlow({
   const handleSave = useCallback(() => {
     if (!canSave) return;
 
-    if (mode === 'category' && selectedCategory) {
-      onSave({
-        name: selectedCategory.label,
-        type: 'category',
-        categoryKey: selectedCategory.value,
-        monthlyLimit: parsedAmount,
-        currency: 'PHP',
-        icon: selectedCategory.emoji,
-        color: '#2d6a4f',
-      });
-      return;
-    }
-
-    // custom mode
-    const commitmentFields = isCommitmentMode
+    const commitmentFields = commitmentEnabled
       ? {
           isCommitment: true as const,
           dueDay: parseInt(dueDay, 10),
@@ -202,6 +182,21 @@ export default function CreateBudgetFlow({
         }
       : {};
 
+    if (mode === 'category' && selectedCategory) {
+      onSave({
+        name: selectedCategory.label,
+        type: 'category',
+        categoryKey: selectedCategory.value,
+        monthlyLimit: parsedAmount,
+        currency: 'PHP',
+        icon: selectedCategory.emoji,
+        color: '#2d6a4f',
+        ...commitmentFields,
+      });
+      return;
+    }
+
+    // custom mode
     onSave({
       name: name.trim(),
       type: 'custom',
@@ -212,13 +207,13 @@ export default function CreateBudgetFlow({
       preset: selectedPreset?.key ?? undefined,
       ...commitmentFields,
     });
-  }, [canSave, mode, selectedCategory, parsedAmount, name, selectedColor, selectedPreset, isCommitmentMode, dueDay, varies, sourceAccountId, onSave]);
+  }, [canSave, mode, selectedCategory, parsedAmount, name, selectedColor, selectedPreset, commitmentEnabled, dueDay, varies, sourceAccountId, onSave, editingBudget]);
 
   const headerTitle = (() => {
     if (isEditing) return 'Edit Budget';
     if (mode === 'category') return 'Category Budget';
     if (step === 1) return 'Choose Preset';
-    if (isCommitmentMode) return 'Set Up Commitment';
+    if (commitmentEnabled) return 'Set Up Commitment';
     return 'Budget Details';
   })();
 
@@ -256,6 +251,15 @@ export default function CreateBudgetFlow({
             amount={amount}
             setAmount={setAmount}
             isEditing={isEditing}
+            commitmentEnabled={commitmentEnabled}
+            setCommitmentEnabled={setCommitmentEnabled}
+            dueDay={dueDay}
+            setDueDay={setDueDay}
+            varies={varies}
+            setVaries={setVaries}
+            sourceAccountId={sourceAccountId}
+            setSourceAccountId={setSourceAccountId}
+            accounts={accounts}
           />
         )}
 
@@ -276,7 +280,8 @@ export default function CreateBudgetFlow({
             selectedColor={selectedColor}
             setSelectedColor={setSelectedColor}
             isCustomEntry={isCustomEntry}
-            isCommitmentMode={isCommitmentMode}
+            commitmentEnabled={commitmentEnabled}
+            setCommitmentEnabled={setCommitmentEnabled}
             dueDay={dueDay}
             setDueDay={setDueDay}
             varies={varies}
@@ -312,6 +317,109 @@ export default function CreateBudgetFlow({
   );
 }
 
+/* ── Commitment Toggle + Fields (shared) ──────────────────────────── */
+
+function CommitmentToggle({
+  enabled,
+  onToggle,
+}: {
+  enabled: boolean;
+  onToggle: (v: boolean) => void;
+}) {
+  return (
+    <div>
+      <label className="flex items-center justify-between bg-surface border border-border rounded-xl px-4 py-3">
+        <span className="text-sm text-text-primary">Recurring commitment</span>
+        <input
+          type="checkbox"
+          checked={enabled}
+          onChange={(e) => onToggle(e.target.checked)}
+          className="h-5 w-5"
+          aria-label="Enable recurring commitment"
+        />
+      </label>
+      <p className="text-[11px] text-text-tertiary mt-1">
+        Posts a bill each month on a chosen due day. Use for rent, subscriptions, utilities, or any fixed recurring expense.
+      </p>
+    </div>
+  );
+}
+
+function CommitmentFieldsBlock({
+  dueDay,
+  setDueDay,
+  varies,
+  setVaries,
+  sourceAccountId,
+  setSourceAccountId,
+  accounts,
+}: {
+  dueDay: string;
+  setDueDay: (v: string) => void;
+  varies: boolean;
+  setVaries: (v: boolean) => void;
+  sourceAccountId: string | undefined;
+  setSourceAccountId: (v: string | undefined) => void;
+  accounts: { id: string; name: string }[];
+}) {
+  return (
+    <>
+      <div>
+        <label className="text-[11px] text-text-secondary font-semibold uppercase tracking-wider mb-2 block">
+          Due Day
+        </label>
+        <input
+          type="number"
+          inputMode="numeric"
+          min={1}
+          max={31}
+          placeholder="e.g. 15"
+          value={dueDay}
+          onChange={(e) => setDueDay(e.target.value)}
+          aria-label="Due day of month"
+          className="w-full bg-surface border border-border rounded-xl py-3 px-4 text-sm text-text-primary placeholder:text-text-secondary/30 focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 transition-all"
+        />
+        <p className="text-[11px] text-text-tertiary mt-1">Day of the month (1–31). Auto-adjusts for short months.</p>
+      </div>
+
+      <div>
+        <label className="flex items-center justify-between bg-surface border border-border rounded-xl px-4 py-3">
+          <span className="text-sm text-text-primary">Varies each month</span>
+          <input
+            type="checkbox"
+            checked={varies}
+            onChange={(e) => setVaries(e.target.checked)}
+            className="h-5 w-5"
+            aria-label="Bill amount varies each month"
+          />
+        </label>
+        <p className="text-[11px] text-text-tertiary mt-1">
+          {varies
+            ? 'Bill posts as pending until you confirm the actual amount.'
+            : 'Bill auto-posts at the expected amount each month.'}
+        </p>
+      </div>
+
+      <div>
+        <label className="text-[11px] text-text-secondary font-semibold uppercase tracking-wider mb-2 block">
+          Source Account (optional)
+        </label>
+        <select
+          value={sourceAccountId ?? ''}
+          onChange={(e) => setSourceAccountId(e.target.value || undefined)}
+          aria-label="Source account"
+          className="w-full bg-surface border border-border rounded-xl py-3 px-4 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 transition-all"
+        >
+          <option value="">None</option>
+          {accounts.map((a) => (
+            <option key={a.id} value={a.id}>{a.name}</option>
+          ))}
+        </select>
+      </div>
+    </>
+  );
+}
+
 /* ── Category Budget Form ──────────────────────────────────────────── */
 
 function CategoryBudgetForm({
@@ -321,6 +429,15 @@ function CategoryBudgetForm({
   amount,
   setAmount,
   isEditing,
+  commitmentEnabled,
+  setCommitmentEnabled,
+  dueDay,
+  setDueDay,
+  varies,
+  setVaries,
+  sourceAccountId,
+  setSourceAccountId,
+  accounts,
 }: {
   availableCategories: FinanceCategoryDef[];
   selectedCategory: FinanceCategoryDef | null;
@@ -328,6 +445,15 @@ function CategoryBudgetForm({
   amount: string;
   setAmount: (v: string) => void;
   isEditing: boolean;
+  commitmentEnabled: boolean;
+  setCommitmentEnabled: (v: boolean) => void;
+  dueDay: string;
+  setDueDay: (v: string) => void;
+  varies: boolean;
+  setVaries: (v: boolean) => void;
+  sourceAccountId: string | undefined;
+  setSourceAccountId: (v: string | undefined) => void;
+  accounts: { id: string; name: string }[];
 }) {
   return (
     <div className="px-4 py-6 space-y-6 pb-4">
@@ -393,10 +519,10 @@ function CategoryBudgetForm({
         </div>
       )}
 
-      {/* Monthly limit */}
+      {/* Monthly limit / expected amount */}
       <div>
         <label className="text-[11px] text-text-secondary font-semibold uppercase tracking-wider mb-2 block">
-          Monthly Limit
+          {commitmentEnabled ? 'Expected Amount' : 'Monthly Limit'}
         </label>
         <input
           type="text"
@@ -412,6 +538,20 @@ function CategoryBudgetForm({
           <p className="text-[11px] text-primary/70 mt-1">= {parseAmountInput(amount).toLocaleString()}</p>
         )}
       </div>
+
+      <CommitmentToggle enabled={commitmentEnabled} onToggle={setCommitmentEnabled} />
+
+      {commitmentEnabled && (
+        <CommitmentFieldsBlock
+          dueDay={dueDay}
+          setDueDay={setDueDay}
+          varies={varies}
+          setVaries={setVaries}
+          sourceAccountId={sourceAccountId}
+          setSourceAccountId={setSourceAccountId}
+          accounts={accounts}
+        />
+      )}
 
     </div>
   );
@@ -489,13 +629,13 @@ function PresetGrid({
 
 function CustomBudgetForm({
   name, setName, amount, setAmount, selectedColor, setSelectedColor, isCustomEntry,
-  isCommitmentMode, dueDay, setDueDay, varies, setVaries, sourceAccountId, setSourceAccountId, accounts,
+  commitmentEnabled, setCommitmentEnabled, dueDay, setDueDay, varies, setVaries, sourceAccountId, setSourceAccountId, accounts,
 }: {
   name: string; setName: (v: string) => void;
   amount: string; setAmount: (v: string) => void;
   selectedColor: string; setSelectedColor: (v: string) => void;
   isCustomEntry: boolean;
-  isCommitmentMode: boolean;
+  commitmentEnabled: boolean; setCommitmentEnabled: (v: boolean) => void;
   dueDay: string; setDueDay: (v: string) => void;
   varies: boolean; setVaries: (v: boolean) => void;
   sourceAccountId: string | undefined; setSourceAccountId: (v: string | undefined) => void;
@@ -522,7 +662,7 @@ function CustomBudgetForm({
       {/* Monthly limit */}
       <div>
         <label className="text-[11px] text-text-secondary font-semibold uppercase tracking-wider mb-2 block">
-          {isCommitmentMode ? 'Expected Amount' : 'Monthly Limit'}
+          {commitmentEnabled ? 'Expected Amount' : 'Monthly Limit'}
         </label>
         <input
           type="text"
@@ -539,61 +679,18 @@ function CustomBudgetForm({
         )}
       </div>
 
-      {isCommitmentMode && (
-        <>
-          <div>
-            <label className="text-[11px] text-text-secondary font-semibold uppercase tracking-wider mb-2 block">
-              Due Day
-            </label>
-            <input
-              type="number"
-              inputMode="numeric"
-              min={1}
-              max={31}
-              placeholder="e.g. 15"
-              value={dueDay}
-              onChange={(e) => setDueDay(e.target.value)}
-              aria-label="Due day of month"
-              className="w-full bg-surface border border-border rounded-xl py-3 px-4 text-sm text-text-primary placeholder:text-text-secondary/30 focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 transition-all"
-            />
-            <p className="text-[11px] text-text-tertiary mt-1">Day of the month (1–31). Auto-adjusts for short months.</p>
-          </div>
+      <CommitmentToggle enabled={commitmentEnabled} onToggle={setCommitmentEnabled} />
 
-          <div>
-            <label className="flex items-center justify-between bg-surface border border-border rounded-xl px-4 py-3">
-              <span className="text-sm text-text-primary">Varies each month</span>
-              <input
-                type="checkbox"
-                checked={varies}
-                onChange={(e) => setVaries(e.target.checked)}
-                className="h-5 w-5"
-                aria-label="Bill amount varies each month"
-              />
-            </label>
-            <p className="text-[11px] text-text-tertiary mt-1">
-              {varies
-                ? 'Bill posts as pending until you confirm the actual amount.'
-                : 'Bill auto-posts at the expected amount each month.'}
-            </p>
-          </div>
-
-          <div>
-            <label className="text-[11px] text-text-secondary font-semibold uppercase tracking-wider mb-2 block">
-              Source Account (optional)
-            </label>
-            <select
-              value={sourceAccountId ?? ''}
-              onChange={(e) => setSourceAccountId(e.target.value || undefined)}
-              aria-label="Source account"
-              className="w-full bg-surface border border-border rounded-xl py-3 px-4 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 transition-all"
-            >
-              <option value="">None</option>
-              {accounts.map((a) => (
-                <option key={a.id} value={a.id}>{a.name}</option>
-              ))}
-            </select>
-          </div>
-        </>
+      {commitmentEnabled && (
+        <CommitmentFieldsBlock
+          dueDay={dueDay}
+          setDueDay={setDueDay}
+          varies={varies}
+          setVaries={setVaries}
+          sourceAccountId={sourceAccountId}
+          setSourceAccountId={setSourceAccountId}
+          accounts={accounts}
+        />
       )}
 
       {/* Color picker */}

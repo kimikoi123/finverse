@@ -103,7 +103,7 @@ export function planAutoConfirm(budgets: Budget[], today: Date): AutoConfirmActi
           type: 'expense',
           amount: b.monthlyLimit,
           currency: b.currency,
-          category: 'bills',
+          category: b.type === 'category' && b.categoryKey ? b.categoryKey : 'bills',
           description: b.name,
           date: dueDateISO,
           budgetId: b.id,

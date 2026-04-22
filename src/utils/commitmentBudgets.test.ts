@@ -175,4 +175,42 @@ describe('planAutoConfirm', () => {
     const plan = planAutoConfirm([b], new Date(2026, 3, 20));
     expect(plan[0]!.transaction.accountId).toBe('acct-1');
   });
+
+  it('tags auto-posted transaction with categoryKey for category commitments', () => {
+    const b = makeCommitment({
+      id: 'cat-1',
+      name: 'Transport',
+      type: 'category',
+      categoryKey: 'transport',
+      preset: undefined,
+      varies: false,
+      dueDay: 15,
+    });
+    const plan = planAutoConfirm([b], new Date(2026, 3, 20));
+    expect(plan).toHaveLength(1);
+    expect(plan[0]!.transaction.category).toBe('transport');
+    expect(plan[0]!.transaction.budgetId).toBe('cat-1');
+  });
+
+  it('keeps bills category for non-category (custom) commitments', () => {
+    const b = makeCommitment({ varies: false, dueDay: 15 });
+    const plan = planAutoConfirm([b], new Date(2026, 3, 20));
+    expect(plan[0]!.transaction.category).toBe('bills');
+  });
+});
+
+describe('deriveCommitmentState (category commitments)', () => {
+  it('is pending for a category-type commitment past due-day, unconfirmed, varies=true', () => {
+    const b = makeCommitment({
+      type: 'category',
+      categoryKey: 'transport',
+      preset: undefined,
+      dueDay: 15,
+      varies: true,
+    });
+    const today = new Date(2026, 3, 16);
+    const state = deriveCommitmentState(b, today);
+    expect(state.isPendingThisMonth).toBe(true);
+    expect(state.nextDueDate).toBe('2026-04-15');
+  });
 });
