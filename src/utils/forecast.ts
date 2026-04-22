@@ -1,7 +1,8 @@
-import type { Transaction, Installment, DebtEntry, Account, ExchangeRates, RecurringFrequency, PaydayConfig } from '../types';
+import type { Transaction, Installment, DebtEntry, Account, ExchangeRates, RecurringFrequency, PaydayConfig, Budget } from '../types';
 import { getFinanceCategoryDef } from './categories';
 import { convertToBase } from './currencies';
 import { getPaydayOccurrences } from './payday';
+import { resolveDueDate } from './commitmentBudgets';
 
 // --- Recurring occurrence helpers ---
 
@@ -217,7 +218,7 @@ export function computeForecast(
 
 // --- Cashflow timeline ---
 
-export type ForecastEventSource = 'recurring' | 'payday' | 'installment' | 'debt' | 'credit-card';
+export type ForecastEventSource = 'recurring' | 'payday' | 'installment' | 'debt' | 'credit-card' | 'bill' | 'scheduled';
 
 export interface ForecastEvent {
   id: string;
@@ -237,15 +238,17 @@ export interface ForecastTimeline {
   net: number;
   startingBalance: number;
   projectedBalance: number;
+  minBalance: number;           // lowest running balance reached in the window
+  minBalanceDate: Date | null;  // null means the starting balance is the minimum
 }
 
 /** Monthly-only next occurrence (used for payday, installments, credit cards) */
-export function getNextOccurrence(recurringDay: number): Date {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const thisMonth = new Date(today.getFullYear(), today.getMonth(), recurringDay);
-  if (thisMonth >= today) return thisMonth;
-  return new Date(today.getFullYear(), today.getMonth() + 1, recurringDay);
+export function getNextOccurrence(recurringDay: number, fromDate?: Date): Date {
+  const base = fromDate ? new Date(fromDate) : new Date();
+  base.setHours(0, 0, 0, 0);
+  const thisMonth = new Date(base.getFullYear(), base.getMonth(), recurringDay);
+  if (thisMonth >= base) return thisMonth;
+  return new Date(base.getFullYear(), base.getMonth() + 1, recurringDay);
 }
 
 export function computeTimeline(params: {
@@ -254,9 +257,11 @@ export function computeTimeline(params: {
   installments: Installment[];
   debts: DebtEntry[];
   accounts: Account[];
+  budgets?: Budget[];
   defaultCurrency: string;
   exchangeRates: ExchangeRates | null;
   windowDays?: number;
+  today?: Date; // override for testing
 }): ForecastTimeline {
   const {
     transactions,
@@ -264,12 +269,14 @@ export function computeTimeline(params: {
     installments,
     debts,
     accounts,
+    budgets = [],
     defaultCurrency,
     exchangeRates,
     windowDays = 30,
+    today: todayOpt,
   } = params;
 
-  const today = startOfToday();
+  const today = todayOpt ? (() => { const d = new Date(todayOpt); d.setHours(0, 0, 0, 0); return d; })() : startOfToday();
   const endDate = new Date(today);
   endDate.setDate(endDate.getDate() + windowDays);
 
@@ -309,21 +316,33 @@ export function computeTimeline(params: {
     }
   }
 
-  // 3. Installments (active ones with remaining months)
+  // 3. Installments (active ones with remaining months) — may appear multiple times per window
   for (const inst of installments) {
     if (inst.paidMonths >= inst.totalMonths) continue;
     const dayOfMonth = new Date(inst.startDate).getDate();
-    const next = getNextOccurrence(dayOfMonth);
-    if (next >= today && next <= endDate) {
-      events.push({
-        id: `installment-${inst.id}`,
-        date: next,
-        description: inst.itemName,
-        amount: -inst.monthlyPayment,
-        currency: inst.currency,
-        source: 'installment',
-        emoji: '📦',
-      });
+    let year = today.getFullYear();
+    let month = today.getMonth();
+    let emittedSoFar = 0;
+    for (let i = 0; i < 6; i++) {
+      const maxDay = new Date(year, month + 1, 0).getDate();
+      const clamped = Math.min(dayOfMonth, maxDay);
+      const occ = new Date(year, month, clamped);
+      occ.setHours(0, 0, 0, 0);
+      if (occ > endDate) break;
+      if (occ >= today && inst.paidMonths + emittedSoFar < inst.totalMonths) {
+        events.push({
+          id: `installment-${inst.id}-${year}-${String(month + 1).padStart(2, '0')}`,
+          date: occ,
+          description: inst.itemName,
+          amount: -inst.monthlyPayment,
+          currency: inst.currency,
+          source: 'installment',
+          emoji: '📦',
+        });
+        emittedSoFar++;
+      }
+      month += 1;
+      if (month > 11) { month = 0; year += 1; }
     }
   }
 
@@ -349,7 +368,7 @@ export function computeTimeline(params: {
   // 5. Credit card due dates (reminders only)
   for (const acc of accounts) {
     if (acc.type !== 'credit' || acc.dueDay == null || acc.balance <= 0) continue;
-    const next = getNextOccurrence(acc.dueDay);
+    const next = getNextOccurrence(acc.dueDay, today);
     if (next >= today && next <= endDate) {
       events.push({
         id: `credit-${acc.id}`,
@@ -362,6 +381,62 @@ export function computeTimeline(params: {
         isReminder: true,
       });
     }
+  }
+
+  // 6. Commitment budgets (recurring bills)
+  for (const budget of budgets) {
+    if (!budget.isCommitment || budget.dueDay === undefined) continue;
+    const catDef = budget.type === 'category' && budget.categoryKey
+      ? getFinanceCategoryDef(budget.categoryKey)
+      : getFinanceCategoryDef('bills');
+    let year = today.getFullYear();
+    let month = today.getMonth() + 1; // 1-12
+    for (let i = 0; i < 14; i++) {
+      const iterKey = `${year}-${String(month).padStart(2, '0')}`;
+      // Skip if the month has already been confirmed (auto or manual) — the transaction is real.
+      if (!budget.lastConfirmedMonth || iterKey > budget.lastConfirmedMonth) {
+        const dueDateISO = resolveDueDate(budget.dueDay, year, month);
+        const [iy, im, id] = dueDateISO.split('-').map(Number);
+        const due = new Date(iy!, im! - 1, id!);
+        due.setHours(0, 0, 0, 0);
+        if (due > endDate) break;
+        if (due >= today) {
+          events.push({
+            id: `bill-${budget.id}-${iterKey}`,
+            date: due,
+            description: budget.name,
+            amount: -budget.monthlyLimit,
+            currency: budget.currency,
+            source: 'bill',
+            emoji: catDef.emoji,
+          });
+        }
+      }
+      month += 1;
+      if (month > 12) { month = 1; year += 1; }
+    }
+  }
+
+  // 7. Scheduled (future-dated) one-time transactions
+  const todayISO = dateKey(today);
+  const endDateISO = dateKey(endDate);
+  for (const t of transactions) {
+    if (t.isRecurring) continue;
+    if (t.date <= todayISO) continue;
+    if (t.date > endDateISO) continue;
+    const [y, m, d] = t.date.split('-').map(Number);
+    const eventDate = new Date(y!, m! - 1, d!);
+    eventDate.setHours(0, 0, 0, 0);
+    const catDef = getFinanceCategoryDef(t.category);
+    events.push({
+      id: `scheduled-${t.id}`,
+      date: eventDate,
+      description: t.description || catDef.label,
+      amount: t.type === 'income' ? t.amount : -t.amount,
+      currency: t.currency,
+      source: 'scheduled',
+      emoji: catDef.emoji,
+    });
   }
 
   // Sort by date
@@ -392,5 +467,30 @@ export function computeTimeline(params: {
     }, 0);
   const net = totalIn - totalOut;
 
-  return { events, totalIn, totalOut, net, startingBalance, projectedBalance: startingBalance + net };
+  // Running-balance walk — find the worst-day point within the window.
+  let running = startingBalance;
+  let minBalance = startingBalance;
+  let minBalanceDate: Date | null = null;
+  for (const e of events) {
+    if (e.isReminder) continue;
+    const converted = e.currency === defaultCurrency
+      ? e.amount
+      : convertToBase(e.amount, e.currency, defaultCurrency, exchangeRates);
+    running += converted;
+    if (running < minBalance) {
+      minBalance = running;
+      minBalanceDate = e.date;
+    }
+  }
+
+  return {
+    events,
+    totalIn,
+    totalOut,
+    net,
+    startingBalance,
+    projectedBalance: startingBalance + net,
+    minBalance,
+    minBalanceDate,
+  };
 }

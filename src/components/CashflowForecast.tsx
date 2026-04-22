@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { ArrowLeft } from 'lucide-react';
-import type { Transaction, Installment, DebtEntry, Account, ExchangeRates, PaydayConfig } from '../types';
+import type { Transaction, Installment, DebtEntry, Account, Budget, ExchangeRates, PaydayConfig } from '../types';
 import { formatCurrency } from '../utils/currencies';
 import { computeTimeline, type ForecastEvent } from '../utils/forecast';
 
@@ -9,6 +9,7 @@ interface CashflowForecastProps {
   installments: Installment[];
   debts: DebtEntry[];
   accounts: Account[];
+  budgets: Budget[];
   defaultCurrency: string;
   paydayConfig?: PaydayConfig;
   exchangeRates: ExchangeRates | null;
@@ -39,6 +40,8 @@ const SOURCE_LABELS: Record<string, string> = {
   installment: 'Installment',
   debt: 'Debt',
   'credit-card': 'Credit Card',
+  bill: 'Bill',
+  scheduled: 'Scheduled',
 };
 
 function getDaysUntil(date: Date): number {
@@ -120,6 +123,7 @@ export default function CashflowForecast({
   installments,
   debts,
   accounts,
+  budgets,
   defaultCurrency,
   paydayConfig,
   exchangeRates,
@@ -133,10 +137,11 @@ export default function CashflowForecast({
         installments,
         debts,
         accounts,
+        budgets,
         defaultCurrency,
         exchangeRates,
       }),
-    [transactions, paydayConfig, installments, debts, accounts, defaultCurrency, exchangeRates],
+    [transactions, paydayConfig, installments, debts, accounts, budgets, defaultCurrency, exchangeRates],
   );
 
   const grouped = useMemo(() => {
@@ -207,10 +212,12 @@ export default function CashflowForecast({
             {netPositive ? '↑' : '↓'} {netPositive ? '+' : '-'}{formatCurrency(Math.abs(timeline.net), defaultCurrency)}
           </span>
         </div>
-        {!projectedPositive && (
+        {timeline.minBalance < 0 && (
           <div className="mt-3 bg-danger/10 rounded-xl px-3 py-2">
             <p className="text-xs font-medium text-danger">
-              You may run short — projected balance is negative
+              {timeline.minBalanceDate
+                ? `Dips to -${formatCurrency(Math.abs(timeline.minBalance), defaultCurrency)} on ${formatDateHeader(timeline.minBalanceDate)}`
+                : 'You may run short — starting balance is already negative'}
             </p>
           </div>
         )}

@@ -505,6 +505,7 @@ function App() {
               installments={installments}
               debts={debts}
               accounts={accounts}
+              budgets={budgetsWithSpending}
               defaultCurrency={preferences.defaultCurrency}
               paydayConfig={preferences.paydayConfig}
               exchangeRates={exchangeRates.rates}
