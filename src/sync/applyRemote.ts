@@ -98,6 +98,8 @@ function tableFor(type: SyncEntityType): GenericTable | null {
       return db.installments as unknown as GenericTable;
     case 'userPreferences':
       return db.userPreferences as unknown as GenericTable;
+    case 'rule':
+      return db.rules as unknown as GenericTable;
     case 'receipt':
       return db.receiptPhotos as unknown as GenericTable;
     default: {

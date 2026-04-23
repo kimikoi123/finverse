@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { parseTransactionInput, type ParsedTransaction } from '../utils/transactionParser';
 import { usePrivacyMode } from '../hooks/usePrivacyMode';
+import { useRules } from '../hooks/useRules';
 
 interface QuickAddBarProps {
   onParsed: (parsed: ParsedTransaction) => void;
@@ -23,8 +24,9 @@ export default function QuickAddBar({ onParsed }: QuickAddBarProps) {
   const [error, setError] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const { privacyMode } = usePrivacyMode();
+  const { rules } = useRules();
 
-  const parsed = value.trim() ? parseTransactionInput(value) : null;
+  const parsed = value.trim() ? parseTransactionInput(value, rules) : null;
 
   const handleSubmit = () => {
     if (parsed) {

@@ -1,3 +1,6 @@
+import type { Rule } from '../types';
+import { applyRulesToParsed } from './rules';
+
 export interface ParsedTransaction {
   description: string;
   amount: number;
@@ -111,7 +114,7 @@ function detectCategory(description: string): CategoryMapping {
   return { category: 'other', type: 'expense' };
 }
 
-export function parseTransactionInput(input: string): ParsedTransaction | null {
+export function parseTransactionInput(input: string, rules?: readonly Rule[]): ParsedTransaction | null {
   const trimmed = input.trim().replace(/\s+/g, ' ');
   if (!trimmed) return null;
 
@@ -122,5 +125,7 @@ export function parseTransactionInput(input: string): ParsedTransaction | null {
   const description = remaining;
   const { category, type } = description ? detectCategory(description) : { category: 'other', type: 'expense' as const };
 
-  return { description, amount, type, category };
+  const parsed: ParsedTransaction = { description, amount, type, category };
+  // User rules override the hardcoded KEYWORD_MAP fallback.
+  return rules && rules.length > 0 ? applyRulesToParsed(parsed, rules) : parsed;
 }

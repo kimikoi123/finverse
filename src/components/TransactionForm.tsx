@@ -1,9 +1,11 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { ChevronDown, X } from 'lucide-react';
 import { useEscapeKey } from '../hooks/useEscapeKey';
 import { CURRENCIES } from '../utils/currencies';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '../utils/categories';
 import { parseAmountInput, isKNotation, validateAmountInput, amountErrorMessage } from '../utils/amountParser';
+import { matchRule } from '../utils/rules';
+import { useRules } from '../hooks/useRules';
 import InlineAlert from './ui/InlineAlert';
 import ReceiptScanner from './ReceiptScanner';
 import type { ScanResult } from './ReceiptScanner';
@@ -89,9 +91,21 @@ export default function TransactionForm({
   const [repeatsForever, setRepeatsForever] = useState(!editingTransaction?.recurringEndDate);
   const [showCurrencyDropdown, setShowCurrencyDropdown] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [categoryManuallySet, setCategoryManuallySet] = useState(!!editingTransaction || !!quickAddData?.category);
   const recurringOptionsRef = useRef<HTMLDivElement>(null);
   const dismissValidation = useCallback(() => setValidationError(null), []);
   const isEditing = !!editingTransaction;
+  const { rules } = useRules();
+
+  // Auto-pick category from user rules while description changes, but only
+  // until the user manually overrides — then leave their choice alone.
+  useEffect(() => {
+    if (categoryManuallySet) return;
+    const match = matchRule(description, type, accountId, rules);
+    if (!match) return;
+    if (!categories.some((c) => c.value === match.category)) return;
+    if (match.category !== category) setCategory(match.category);
+  }, [description, type, accountId, rules, categoryManuallySet, category, categories]);
 
   const handleScanApply = useCallback((result: ScanResult) => {
     if (result.amount) setAmount(result.amount);
@@ -99,7 +113,10 @@ export default function TransactionForm({
     if (result.date) setDate(result.date);
     if (result.category) {
       const validCat = categories.find((c) => c.value === result.category);
-      if (validCat) setCategory(validCat.value);
+      if (validCat) {
+        setCategory(validCat.value);
+        setCategoryManuallySet(true);
+      }
     }
   }, [categories]);
 
@@ -245,7 +262,7 @@ export default function TransactionForm({
                 <button
                   key={cat.value}
                   type="button"
-                  onClick={() => setCategory(cat.value)}
+                  onClick={() => { setCategory(cat.value); setCategoryManuallySet(true); }}
                   className={`px-3 py-1.5 rounded-xl text-sm transition-all ${
                     category === cat.value
                       ? 'bg-primary text-white font-medium'

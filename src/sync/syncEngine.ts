@@ -363,6 +363,8 @@ async function fetchRow(entityType: SyncEntityType, entityId: string): Promise<R
         return db.employees;
       case 'advance':
         return db.advances;
+      case 'rule':
+        return db.rules;
       case 'receipt':
         return db.receiptPhotos;
     }
@@ -424,6 +426,7 @@ async function enqueueAllLocalRows(): Promise<void> {
     ...toQueueEntries('userPreferences', await db.userPreferences.toArray()),
     ...toQueueEntries('employee', await db.employees.toArray()),
     ...toQueueEntries('advance', await db.advances.toArray()),
+    ...toQueueEntries('rule', await db.rules.toArray()),
     ...receiptEntries,
   ];
 

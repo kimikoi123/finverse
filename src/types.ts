@@ -11,7 +11,8 @@ export type SyncEntityType =
   | 'userPreferences'
   | 'receipt'
   | 'employee'
-  | 'advance';
+  | 'advance'
+  | 'rule';
 
 export interface CurrencyConfig {
   symbol: string;
@@ -282,6 +283,23 @@ export interface Advance {
   date: string; // ISO date when advance was given
   settled: boolean;
   settledAt?: string; // ISO date when deducted from paycheck
+  createdAt: string;
+  updatedAt?: number;
+  deletedAt?: number;
+}
+
+// Auto-categorization rule. When a new transaction's description contains
+// `pattern` (case-insensitive substring), and any optional filters match,
+// the `category` (and `type` if set) override the default. Rules are applied
+// in ascending `priority` order — the first match wins.
+export interface Rule {
+  id: string;
+  pattern: string;
+  category: string;
+  type?: 'income' | 'expense';
+  accountId?: string;
+  priority: number;
+  enabled: boolean;
   createdAt: string;
   updatedAt?: number;
   deletedAt?: number;

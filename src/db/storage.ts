@@ -1,7 +1,7 @@
 import { db } from './database';
 import { hasIdentity } from '../sync/deviceIdentity';
 import { fetchPrivateBlobAsObjectUrl } from '../sync/syncApi';
-import type { Trip, TripState, DeletedTrip, ExchangeRates, Transaction, UserPreferences, Account, Budget, Goal, DebtEntry, Installment, Employee, Advance, SyncEntityType } from '../types';
+import type { Trip, TripState, DeletedTrip, ExchangeRates, Transaction, UserPreferences, Account, Budget, Goal, DebtEntry, Installment, Employee, Advance, Rule, SyncEntityType } from '../types';
 
 // Sync helpers: every write goes through these so `updatedAt` is always stamped
 // and deletes become tombstones instead of hard removals. The sync engine relies
@@ -412,4 +412,22 @@ export async function settleAdvances(ids: string[]): Promise<void> {
     await db.advances.update(id, stampUpdate({ settled: true, settledAt: now }));
     await enqueuePush('advance', id);
   }
+}
+
+// Rules
+export async function loadRules(): Promise<Rule[]> {
+  const all = await db.rules.toArray();
+  return all.filter((r) => !r.deletedAt);
+}
+export async function addRule(rule: Rule): Promise<void> {
+  await db.rules.put(stampWrite(rule));
+  await enqueuePush('rule', rule.id);
+}
+export async function updateRule(id: string, updates: Partial<Rule>): Promise<void> {
+  await db.rules.update(id, stampUpdate(updates));
+  await enqueuePush('rule', id);
+}
+export async function deleteRule(id: string): Promise<void> {
+  await db.rules.update(id, tombstoneUpdate());
+  await enqueuePush('rule', id);
 }

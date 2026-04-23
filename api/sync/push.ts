@@ -29,6 +29,7 @@ const ALLOWED_TYPES = new Set([
   'receipt',
   'employee',
   'advance',
+  'rule',
 ]);
 
 const MAX_BATCH = 1000;

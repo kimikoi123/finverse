@@ -47,12 +47,15 @@ import PlannedPayments from './components/PlannedPayments';
 import ConfirmBillDialog from './components/ConfirmBillDialog';
 import SettingsScreen from './components/Settings';
 import PHTaxCalculator from './components/PHTaxCalculator';
+import RulesList from './components/RulesList';
+import RuleForm from './components/RuleForm';
+import { useRules } from './hooks/useRules';
 import { useGoals } from './hooks/useGoals';
 import { useDebts } from './hooks/useDebts';
 import { useInstallments } from './hooks/useInstallments';
 import { usePayroll } from './hooks/usePayroll';
 import { start as startSyncEngine, stop as stopSyncEngine } from './sync/syncEngine';
-import type { Trip, Account, Budget, Goal, DebtEntry, Installment, Employee, ThemePreference, Transaction } from './types';
+import type { Trip, Account, Budget, Goal, DebtEntry, Installment, Employee, Rule, ThemePreference, Transaction } from './types';
 
 function App() {
   const {
@@ -143,6 +146,10 @@ function App() {
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showTaxCalculator, setShowTaxCalculator] = useState(false);
+  const [showRulesList, setShowRulesList] = useState(false);
+  const [showRuleForm, setShowRuleForm] = useState(false);
+  const [editingRule, setEditingRule] = useState<Rule | null>(null);
+  const { rules, addRule, editRule, removeRule } = useRules();
   const [pendingSharedTrip, setPendingSharedTrip] = useState<Trip | null>(null);
 
   useEffect(() => {
@@ -205,6 +212,25 @@ function App() {
     setQuickAddData(parsed);
     setShowTransactionForm({ type: parsed.type });
   }, []);
+
+  const handleSaveRule = useCallback(async (data: Omit<Rule, 'id' | 'createdAt'>) => {
+    if (editingRule) {
+      await editRule(editingRule.id, data);
+      showToast('Rule updated', () => {});
+    } else {
+      await addRule(data);
+      showToast('Rule saved', () => {});
+    }
+    setShowRuleForm(false);
+    setEditingRule(null);
+  }, [editingRule, editRule, addRule, showToast]);
+
+  const handleApplyRulesToPast = useCallback(async (updates: { id: string; category: string }[]) => {
+    for (const u of updates) {
+      await editTransaction(u.id, { category: u.category });
+    }
+    showToast(`Recategorized ${updates.length} transaction${updates.length === 1 ? '' : 's'}`, () => {});
+  }, [editTransaction, showToast]);
 
   const handleEditTransaction = useCallback((txn: Transaction) => {
     setEditingTransaction(txn);
@@ -443,7 +469,7 @@ function App() {
       )}
 
       <main className={showSettings ? '' : 'pb-20'}>
-        {showSettings && (
+        {showSettings && !showRulesList && (
           <SettingsScreen
             preferences={preferences}
             onUpdate={updatePreferences}
@@ -455,6 +481,30 @@ function App() {
             privacyMode={privacyMode}
             onTogglePrivacy={togglePrivacyMode}
             onOpenTaxCalculator={() => setShowTaxCalculator(true)}
+            onOpenRules={() => setShowRulesList(true)}
+          />
+        )}
+        {showRulesList && (
+          <RulesList
+            rules={rules}
+            accounts={accounts}
+            transactions={transactions}
+            onAdd={() => { setEditingRule(null); setShowRuleForm(true); }}
+            onEdit={(r) => { setEditingRule(r); setShowRuleForm(true); }}
+            onDelete={(id) => { void removeRule(id); }}
+            onToggle={(id, enabled) => { void editRule(id, { enabled }); }}
+            onApplyToPast={(updates) => { void handleApplyRulesToPast(updates); }}
+            onNotify={(msg) => showToast(msg, () => {})}
+            onBack={() => setShowRulesList(false)}
+          />
+        )}
+        {showRuleForm && (
+          <RuleForm
+            editingRule={editingRule ?? undefined}
+            accounts={accounts}
+            nextPriority={rules.length === 0 ? 100 : Math.max(...rules.map((r) => r.priority)) + 10}
+            onSave={handleSaveRule}
+            onCancel={() => { setShowRuleForm(false); setEditingRule(null); }}
           />
         )}
         {showTaxCalculator && (

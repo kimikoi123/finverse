@@ -1,5 +1,5 @@
 import Dexie, { type Table } from 'dexie';
-import type { Trip, DeletedTrip, ExchangeRates, Transaction, UserPreferences, Account, Budget, Goal, DebtEntry, Installment, Employee, Advance, SyncEntityType } from '../types';
+import type { Trip, DeletedTrip, ExchangeRates, Transaction, UserPreferences, Account, Budget, Goal, DebtEntry, Installment, Employee, Advance, Rule, SyncEntityType } from '../types';
 
 interface MetaRecord {
   key: string;
@@ -60,6 +60,7 @@ class SplitTripDB extends Dexie {
   installments!: Table<Installment, string>;
   employees!: Table<Employee, string>;
   advances!: Table<Advance, string>;
+  rules!: Table<Rule, string>;
   pendingPushes!: Table<PendingPushRecord, string>;
 
   constructor() {
@@ -238,6 +239,27 @@ class SplitTripDB extends Dexie {
       pendingPushes: 'id, enqueuedAt',
       employees: 'id, updatedAt, deletedAt',
       advances: 'id, employeeId, settled, updatedAt, deletedAt',
+    });
+    // v13: add user-editable auto-categorization rules. Matched against
+    // transaction descriptions on create; first enabled rule in priority
+    // order wins.
+    this.version(13).stores({
+      trips: 'id, updatedAt, deletedAt',
+      meta: 'key',
+      rateCache: 'key',
+      deletedTrips: 'id',
+      receiptPhotos: 'expenseId, updatedAt, deletedAt',
+      transactions: 'id, date, type, updatedAt, deletedAt',
+      userPreferences: 'id, updatedAt',
+      accounts: 'id, type, sortOrder, updatedAt, deletedAt',
+      budgets: 'id, type, updatedAt, deletedAt',
+      goals: 'id, updatedAt, deletedAt',
+      debts: 'id, direction, updatedAt, deletedAt',
+      installments: 'id, updatedAt, deletedAt',
+      pendingPushes: 'id, enqueuedAt',
+      employees: 'id, updatedAt, deletedAt',
+      advances: 'id, employeeId, settled, updatedAt, deletedAt',
+      rules: 'id, priority, enabled, updatedAt, deletedAt',
     });
   }
 }
