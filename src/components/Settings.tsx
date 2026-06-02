@@ -55,6 +55,9 @@ export default function Settings({
   const handleNameKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       saveName();
+    } else if (e.key === 'Escape') {
+      setNameValue(preferences.displayName);
+      setEditingName(false);
     }
   };
 
@@ -156,8 +159,8 @@ export default function Settings({
           </h2>
           <div className="bg-surface rounded-2xl border border-border overflow-hidden">
             {/* Display name */}
-            <div className="flex justify-between items-center py-3 px-4 border-b border-border">
-              <span className="text-sm text-text-primary">Display name</span>
+            <div className="flex justify-between items-center gap-3 py-3 px-4 border-b border-border">
+              <span className="text-sm text-text-primary shrink-0">Display name</span>
               {editingName ? (
                 <input
                   type="text"
@@ -165,6 +168,7 @@ export default function Settings({
                   onChange={(e) => setNameValue(e.target.value)}
                   onBlur={saveName}
                   onKeyDown={handleNameKeyDown}
+                  maxLength={40}
                   autoFocus
                   className="bg-surface border border-border rounded-xl py-2 px-3 text-sm text-text-primary outline-none focus:ring-2 focus:ring-primary/40 transition-shadow w-40 text-right"
                 />
@@ -174,7 +178,7 @@ export default function Settings({
                     setNameValue(preferences.displayName);
                     setEditingName(true);
                   }}
-                  className="text-sm text-text-secondary hover:text-text-primary transition-colors"
+                  className="text-sm text-text-secondary hover:text-text-primary transition-colors truncate min-w-0 text-right"
                 >
                   {preferences.displayName}
                 </button>
@@ -378,6 +382,9 @@ export default function Settings({
             <div className="bg-surface rounded-2xl border border-border overflow-hidden">
               <button
                 onClick={onTogglePrivacy}
+                role="switch"
+                aria-checked={privacyMode}
+                aria-label="Hide balances"
                 className="flex justify-between items-center py-3 px-4 w-full text-left hover:bg-surface-light transition-colors"
               >
                 <div>

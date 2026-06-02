@@ -17,7 +17,7 @@ interface ImportStatementSheetProps {
   defaultCurrency: string;
   onImport: (txns: Omit<Transaction, 'id' | 'createdAt'>[]) => Promise<unknown>;
   onClose: () => void;
-  showToast?: (message: string, onCommit: () => void) => string;
+  showToast?: (message: string, onCommit?: () => void) => string;
 }
 
 type Step = 'source' | 'preview';
@@ -224,7 +224,7 @@ export default function ImportStatementSheet({
       }));
       await onImport(txns);
       if (showToast) {
-        showToast(`Imported ${txns.length} transaction${txns.length === 1 ? '' : 's'}`, () => {});
+        showToast(`Imported ${txns.length} transaction${txns.length === 1 ? '' : 's'}`);
       }
       onClose();
     } catch {
@@ -241,7 +241,10 @@ export default function ImportStatementSheet({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-border">
+        <div
+          className="flex items-center justify-between p-4 border-b border-border"
+          style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1rem)' }}
+        >
           {step === 'preview' ? (
             <button
               type="button"
@@ -303,7 +306,10 @@ export default function ImportStatementSheet({
         </div>
 
         {/* Footer */}
-        <div className="border-t border-border p-4 bg-surface">
+        <div
+          className="border-t border-border p-4 bg-surface"
+          style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1rem)' }}
+        >
           {step === 'source' ? (
             <button
               type="button"

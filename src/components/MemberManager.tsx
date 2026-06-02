@@ -9,7 +9,7 @@ interface MemberManagerProps {
   expenses: Expense[];
   onAdd: (name: string) => Member | undefined;
   onRemove: (id: string) => boolean | undefined;
-  showToast: (message: string, onCommit: () => void) => string;
+  showToast: (message: string, onCommit?: () => void) => string;
 }
 
 export default function MemberManager({ members, expenses, onAdd, onRemove, showToast }: MemberManagerProps) {
@@ -92,18 +92,18 @@ export default function MemberManager({ members, expenses, onAdd, onRemove, show
         <p className="text-text-secondary/40 text-xs py-3">Add members to start splitting expenses</p>
       ) : (
         <div className="flex flex-wrap gap-2.5">
-          {visibleMembers.map((m, i) => (
+          {visibleMembers.map((m) => (
             <div
               key={m.id}
-              className="flex items-center gap-2 bg-surface-light/50 rounded-full pl-1.5 pr-3 py-1.5 group animate-scale-in ring-1 ring-border/20"
+              className="flex items-center gap-2 min-w-0 max-w-full bg-surface-light/50 rounded-full pl-1.5 pr-3 py-1.5 group animate-scale-in ring-1 ring-border/20"
             >
               <div
                 className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0 ring-2 ring-surface"
-                style={{ backgroundColor: getAvatarColor(i) }}
+                style={{ backgroundColor: getAvatarColor(members.findIndex((mm) => mm.id === m.id)) }}
               >
                 {getInitials(m.name)}
               </div>
-              <span className="text-sm text-text-primary">{m.name}</span>
+              <span className="text-sm text-text-primary truncate max-w-[10rem]" title={m.name}>{m.name}</span>
               <button
                 onClick={() => handleRemove(m)}
                 aria-label={`Remove member: ${m.name}`}

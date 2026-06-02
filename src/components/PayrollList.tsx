@@ -20,7 +20,7 @@ export default function PayrollList({ employees, totalPendingAdvances, onAdd, on
   return (
     <div className="max-w-2xl mx-auto w-full p-4 sm:p-6 animate-fade-in">
       <div className="flex items-center gap-3 mb-4">
-        <button onClick={onBack} className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-surface-hover transition-colors" aria-label="Back">
+        <button onClick={onBack} className="-ml-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-surface-hover transition-colors" aria-label="Back">
           <ArrowLeft size={18} className="text-text-secondary" />
         </button>
         <div className="flex-1">
@@ -29,7 +29,7 @@ export default function PayrollList({ employees, totalPendingAdvances, onAdd, on
         </div>
         <button
           onClick={onAdd}
-          className="w-9 h-9 flex items-center justify-center rounded-xl bg-primary text-white hover:bg-primary-dark transition-colors"
+          className="-mr-1 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-primary text-white hover:bg-primary-dark transition-colors"
           aria-label="Add employee"
         >
           <Plus size={18} />
@@ -72,7 +72,7 @@ export default function PayrollList({ employees, totalPendingAdvances, onAdd, on
                   {pending > 0 ? (
                     <>
                       <div className="text-[11px] text-danger font-medium">-{formatAmount(pending, emp.currency)} advances</div>
-                      <div className="text-[11px] text-text-secondary">Net: {formatAmount(emp.salary - pending, emp.currency)}</div>
+                      <div className="text-[11px] text-text-secondary">Net: {formatAmount(Math.max(emp.salary - pending, 0), emp.currency)}</div>
                     </>
                   ) : (
                     <div className="text-[11px] text-success font-medium">No advances</div>

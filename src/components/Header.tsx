@@ -18,27 +18,27 @@ export default function Header({ activeTrip, onBack, onOpenSettings, showTripNav
       className="glass sticky top-0 z-40 px-4 py-3 sm:px-6"
       style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 0.75rem)' }}
     >
-      <div className="max-w-2xl mx-auto flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      <div className="max-w-2xl mx-auto flex items-center justify-between gap-2">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
           {(showTripNav && activeTrip) || showBackNav ? (
             <>
               <button
                 onClick={onBack}
                 aria-label="Go back"
-                className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl border border-transparent hover:border-border hover:bg-surface-light transition-all text-text-secondary hover:text-text-primary"
+                className="shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl border border-transparent hover:border-border hover:bg-surface-light transition-all text-text-secondary hover:text-text-primary"
               >
                 <ArrowLeft size={18} />
               </button>
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 min-w-0">
                 {showTripNav && activeTrip ? (
                   <>
-                    <span className="hidden sm:inline text-xs text-text-secondary">Trips /</span>
-                    <h1 className="text-base font-semibold text-text-primary/90 leading-tight tracking-tight">
+                    <span className="hidden sm:inline text-xs text-text-secondary shrink-0">Trips /</span>
+                    <h1 className="text-base font-semibold text-text-primary/90 leading-tight tracking-tight truncate">
                       {activeTrip.name}
                     </h1>
                   </>
                 ) : backLabel ? (
-                  <h1 className="text-base font-semibold text-text-primary/90 leading-tight tracking-tight">
+                  <h1 className="text-base font-semibold text-text-primary/90 leading-tight tracking-tight truncate">
                     {backLabel}
                   </h1>
                 ) : null}
@@ -58,7 +58,7 @@ export default function Header({ activeTrip, onBack, onOpenSettings, showTripNav
             </>
           )}
         </div>
-        <div className="flex items-center gap-0.5">
+        <div className="flex items-center gap-0.5 shrink-0">
           {onTogglePrivacy && (
             <button
               onClick={onTogglePrivacy}

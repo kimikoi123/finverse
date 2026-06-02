@@ -27,7 +27,10 @@ export default function PHTaxCalculator({ onBack }: PHTaxCalculatorProps) {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex-shrink-0 px-4 py-3 border-b border-border/30 bg-bg">
+      <div
+        className="flex-shrink-0 px-4 py-3 border-b border-border/30 bg-bg"
+        style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 0.75rem)' }}
+      >
         <div className="max-w-2xl mx-auto flex items-center gap-3">
           <button
             type="button"
@@ -43,7 +46,10 @@ export default function PHTaxCalculator({ onBack }: PHTaxCalculatorProps) {
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-2xl mx-auto w-full">
+        <div
+          className="max-w-2xl mx-auto w-full"
+          style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+        >
           {/* Amount input */}
           <div className="flex flex-col items-center py-8 px-4">
             <span className="text-[10px] font-semibold uppercase tracking-widest text-text-secondary mb-3">

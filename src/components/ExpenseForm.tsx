@@ -95,6 +95,11 @@ export default function ExpenseForm({ members, baseCurrency, customCategories, o
           delete next[id];
           return next;
         });
+        setCustomAmounts((ca) => {
+          const next = { ...ca };
+          delete next[id];
+          return next;
+        });
         return prev.filter((p) => p !== id);
       }
       return [...prev, id];
@@ -124,6 +129,16 @@ export default function ExpenseForm({ members, baseCurrency, customCategories, o
 
     const parsedAmount = parseAmountInput(amount);
 
+    // Only keep custom amounts for current participants — a member can be
+    // deselected (or carried over from an edit) and leave a stale entry that
+    // would desync the split total from `participants`.
+    const cleanCustom =
+      splitType === 'custom'
+        ? Object.fromEntries(
+            Object.entries(customAmounts).filter(([id]) => participants.includes(id)),
+          )
+        : {};
+
     const expense: Omit<Expense, 'id' | 'createdAt'> = {
       description: description.trim(),
       amount: parsedAmount,
@@ -133,12 +148,12 @@ export default function ExpenseForm({ members, baseCurrency, customCategories, o
       participants,
       category,
       date,
-      customAmounts: splitType === 'custom' ? customAmounts : {},
+      customAmounts: cleanCustom,
       advancePayments: showAdvancePayments ? advancePayments : {},
     };
 
     if (splitType === 'custom') {
-      const total = Object.values(customAmounts).reduce((s, v) => s + (v || 0), 0);
+      const total = Object.values(cleanCustom).reduce((s, v) => s + (v || 0), 0);
       if (Math.abs(total - parsedAmount) > 0.01) {
         setValidationError(`Custom amounts (${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}) must equal the total (${parsedAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`);
         return;
@@ -357,30 +372,34 @@ export default function ExpenseForm({ members, baseCurrency, customCategories, o
           </div>
         ) : (
           <div className="space-y-2.5">
-            {members.map((m) => (
-              <div key={m.id} className="flex items-center gap-3">
-                <span className="text-sm text-text-primary/80 w-24 truncate">{m.name}</span>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="0.00"
-                  value={customAmounts[m.id] ?? ''}
-                  onChange={(e) =>
-                    setCustomAmounts((prev) => ({
-                      ...prev,
-                      [m.id]: parseFloat(e.target.value) || 0,
-                    }))
-                  }
-                  aria-label={`Custom amount for ${m.name}`}
-                  className="flex-1 bg-surface-light/60 border border-border/60 rounded-xl px-4 py-2.5 text-sm text-text-primary placeholder:text-text-secondary/30 focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all"
-                />
-              </div>
-            ))}
+            {participants.map((pid) => {
+              const m = members.find((mm) => mm.id === pid);
+              if (!m) return null;
+              return (
+                <div key={m.id} className="flex items-center gap-3">
+                  <span className="text-sm text-text-primary/80 w-24 truncate">{m.name}</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0.00"
+                    value={customAmounts[m.id] ?? ''}
+                    onChange={(e) =>
+                      setCustomAmounts((prev) => ({
+                        ...prev,
+                        [m.id]: parseFloat(e.target.value) || 0,
+                      }))
+                    }
+                    aria-label={`Custom amount for ${m.name}`}
+                    className="flex-1 bg-surface-light/60 border border-border/60 rounded-xl px-4 py-2.5 text-sm text-text-primary placeholder:text-text-secondary/30 focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all"
+                  />
+                </div>
+              );
+            })}
             {amount && (
               <p className="text-xs text-text-secondary/50">
                 Assigned: {CURRENCIES[currency]?.symbol}
-                {Object.values(customAmounts).reduce((s, v) => s + (v || 0), 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {participants.reduce((s, pid) => s + (customAmounts[pid] || 0), 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 {' / '}
                 {CURRENCIES[currency]?.symbol}{parseAmountInput(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>

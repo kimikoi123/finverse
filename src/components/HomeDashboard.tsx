@@ -338,7 +338,7 @@ export default function HomeDashboard({
                 key={p}
                 type="button"
                 onClick={() => setPeriod(p)}
-                className={`px-3 py-1 text-xs font-semibold rounded-lg transition-colors ${
+                className={`px-3 min-h-[36px] py-1.5 text-xs font-semibold rounded-lg transition-colors ${
                   period === p
                     ? 'bg-primary text-white'
                     : 'bg-surface-light text-text-secondary'

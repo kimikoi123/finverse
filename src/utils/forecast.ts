@@ -4,6 +4,7 @@ import { convertToBase } from './currencies';
 import { getPaydayOccurrences } from './payday';
 import { resolveDueDate } from './commitmentBudgets';
 import { estimateMonthlyBaseline } from './baseline';
+import { parseISODateLocal } from './dates';
 
 // --- Recurring occurrence helpers ---
 
@@ -61,9 +62,9 @@ export function getRecurringOccurrences(
     case 'weekly':
     case 'biweekly': {
       const step = freq === 'biweekly' ? 14 : 7;
-      const targetDay = txn.recurringDayOfWeek ?? new Date(txn.date).getDay();
+      const targetDay = txn.recurringDayOfWeek ?? parseISODateLocal(txn.date).getDay();
       // Anchor from the transaction date to maintain cadence
-      const anchor = new Date(txn.date);
+      const anchor = parseISODateLocal(txn.date);
       anchor.setHours(0, 0, 0, 0);
       // Find first occurrence of targetDay on or after anchor
       const anchorDow = anchor.getDay();
@@ -84,7 +85,7 @@ export function getRecurringOccurrences(
       break;
     }
     case 'monthly': {
-      const day = txn.recurringDay ?? new Date(txn.date).getDate();
+      const day = txn.recurringDay ?? parseISODateLocal(txn.date).getDate();
       const start = new Date(windowStart.getFullYear(), windowStart.getMonth(), 1);
       for (let i = 0; i < 13; i++) {
         const y = start.getFullYear();
@@ -98,9 +99,9 @@ export function getRecurringOccurrences(
       break;
     }
     case 'quarterly': {
-      const day = txn.recurringDay ?? new Date(txn.date).getDate();
+      const day = txn.recurringDay ?? parseISODateLocal(txn.date).getDate();
       // Anchor quarter from the transaction date
-      const txnDate = new Date(txn.date);
+      const txnDate = parseISODateLocal(txn.date);
       const anchorMonth = txnDate.getMonth();
       // Go back far enough to find the right quarter phase
       for (let m = anchorMonth - 12; m < anchorMonth + 48; m += 3) {
@@ -113,8 +114,8 @@ export function getRecurringOccurrences(
       break;
     }
     case 'yearly': {
-      const month = (txn.recurringMonth ?? (new Date(txn.date).getMonth() + 1)) - 1; // 0-indexed
-      const day = txn.recurringDay ?? new Date(txn.date).getDate();
+      const month = (txn.recurringMonth ?? (parseISODateLocal(txn.date).getMonth() + 1)) - 1; // 0-indexed
+      const day = txn.recurringDay ?? parseISODateLocal(txn.date).getDate();
       for (let y = windowStart.getFullYear(); y <= windowEnd.getFullYear() + 1; y++) {
         const clamped = clampDay(y, month, day);
         const d = new Date(y, month, clamped);
@@ -127,7 +128,7 @@ export function getRecurringOccurrences(
     case 'custom': {
       const dates = txn.recurringCustomDates ?? [];
       for (const iso of dates) {
-        const d = new Date(iso);
+        const d = parseISODateLocal(iso);
         d.setHours(0, 0, 0, 0);
         if (d >= windowStart && d <= effectiveEnd) results.push(d);
       }
@@ -154,20 +155,20 @@ export function formatRecurringLabel(txn: Transaction): string {
     case 'daily':
       return 'Every day';
     case 'weekly': {
-      const dow = txn.recurringDayOfWeek ?? new Date(txn.date).getDay();
+      const dow = txn.recurringDayOfWeek ?? parseISODateLocal(txn.date).getDay();
       return `Every ${DAY_NAMES[dow]}`;
     }
     case 'biweekly': {
-      const dow = txn.recurringDayOfWeek ?? new Date(txn.date).getDay();
+      const dow = txn.recurringDayOfWeek ?? parseISODateLocal(txn.date).getDay();
       return `Every 2 weeks on ${DAY_NAMES[dow]}`;
     }
     case 'monthly':
-      return `Every month on day ${txn.recurringDay ?? new Date(txn.date).getDate()}`;
+      return `Every month on day ${txn.recurringDay ?? parseISODateLocal(txn.date).getDate()}`;
     case 'quarterly':
-      return `Every 3 months on day ${txn.recurringDay ?? new Date(txn.date).getDate()}`;
+      return `Every 3 months on day ${txn.recurringDay ?? parseISODateLocal(txn.date).getDate()}`;
     case 'yearly': {
-      const m = (txn.recurringMonth ?? (new Date(txn.date).getMonth() + 1)) - 1;
-      const d = txn.recurringDay ?? new Date(txn.date).getDate();
+      const m = (txn.recurringMonth ?? (parseISODateLocal(txn.date).getMonth() + 1)) - 1;
+      const d = txn.recurringDay ?? parseISODateLocal(txn.date).getDate();
       return `Every year on ${MONTH_NAMES[m]} ${d}`;
     }
     case 'custom': {

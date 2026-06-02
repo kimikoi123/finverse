@@ -5,6 +5,7 @@ import type { BudgetWithSpending } from '../hooks/useBudgets';
 import { formatCurrency } from '../utils/currencies';
 import { parseAmountInput } from '../utils/amountParser';
 import { monthKey } from '../utils/commitmentBudgets';
+import { todayISO, formatDisplayDate } from '../utils/dates';
 import LogoBadge from './ui/LogoBadge';
 import { getBudgetPreset } from '../utils/budgetPresets';
 
@@ -14,14 +15,6 @@ interface ConfirmBillDialogProps {
   onConfirm: (txn: Omit<Transaction, 'id' | 'createdAt'>, newLastConfirmedMonth: string) => Promise<void> | void;
   onSkip: () => void;
   onClose: () => void;
-}
-
-function todayISO(): string {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
 }
 
 export default function ConfirmBillDialog({
@@ -66,7 +59,10 @@ export default function ConfirmBillDialog({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center">
-      <div className="bg-bg w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl border border-border p-5">
+      <div
+        className="bg-bg w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl border border-border p-5 max-h-[90dvh] overflow-y-auto overscroll-contain"
+        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.25rem)' }}
+      >
         <div className="flex items-center justify-between mb-4">
           <button
             type="button"
@@ -96,7 +92,7 @@ export default function ConfirmBillDialog({
           <div>
             <p className="text-sm font-semibold text-text-primary">{budget.name}</p>
             <p className="text-xs text-text-secondary">
-              Due {budget.nextDueDate} · estimated {formatCurrency(budget.monthlyLimit, budget.currency)}
+              Due {budget.nextDueDate ? formatDisplayDate(budget.nextDueDate) : '—'} · estimated {formatCurrency(budget.monthlyLimit, budget.currency)}
             </p>
           </div>
         </div>

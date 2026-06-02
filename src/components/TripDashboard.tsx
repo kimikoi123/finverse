@@ -29,7 +29,7 @@ interface TripDashboardProps {
   onRemoveExpense: (id: string) => void;
   onEditExpense: (id: string, updates: Partial<Expense>) => void;
   onUpdateTrip: (updates: Partial<Trip>) => void;
-  showToast: (message: string, onCommit: () => void) => string;
+  showToast: (message: string, onCommit?: () => void) => string;
 }
 
 interface Tab {

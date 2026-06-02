@@ -50,12 +50,14 @@ function DebtCard({
   const remaining = debt.amount - debt.paidAmount;
   const progressPercent = debt.amount > 0 ? Math.min((debt.paidAmount / debt.amount) * 100, 100) : 0;
   const isIOwe = debt.direction === 'i_owe';
-  const overdue = isOverdue(debt.dueDate);
+  const overdue = remaining > 0 && isOverdue(debt.dueDate);
 
   const handleSubmitPayment = () => {
     const parsed = parseAmountInput(paymentAmount);
-    if (parsed > 0) {
-      onRecordPayment(parsed);
+    // Never record more than what's still owed.
+    const capped = Math.min(parsed, remaining);
+    if (capped > 0) {
+      onRecordPayment(capped);
       setPaymentAmount('');
       setShowPayment(false);
     }

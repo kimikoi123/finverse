@@ -2,6 +2,8 @@ import { useState, useMemo } from 'react';
 import { X, FileText, FileSpreadsheet, Loader2 } from 'lucide-react';
 import { useEscapeKey } from '../hooks/useEscapeKey';
 import type { Transaction, Account } from '../types';
+import { todayISO } from '../utils/dates';
+import InlineAlert from './ui/InlineAlert';
 import {
   filterTransactionsForExport,
   generateCSV,
@@ -24,10 +26,6 @@ function getDefaultDateFrom(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
 }
 
-function getToday(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
 export default function ExportSheet({
   transactions,
   accounts,
@@ -38,10 +36,13 @@ export default function ExportSheet({
   useEscapeKey(onClose);
 
   const [dateFrom, setDateFrom] = useState(getDefaultDateFrom);
-  const [dateTo, setDateTo] = useState(getToday);
+  const [dateTo, setDateTo] = useState(todayISO);
   const [accountId, setAccountId] = useState('all');
   const [format, setFormat] = useState<Format>('csv');
   const [exporting, setExporting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const invalidRange = dateFrom > dateTo;
 
   const filtered = useMemo(
     () => filterTransactionsForExport(transactions, dateFrom, dateTo, accountId),
@@ -49,8 +50,9 @@ export default function ExportSheet({
   );
 
   const handleExport = async () => {
-    if (filtered.length === 0) return;
+    if (filtered.length === 0 || invalidRange) return;
     setExporting(true);
+    setError(null);
 
     try {
       const dateTag = `${dateFrom}_${dateTo}`;
@@ -70,7 +72,7 @@ export default function ExportSheet({
       }
       onClose();
     } catch {
-      // Generation failed silently - sheet stays open
+      setError('Could not generate the export. Please try again.');
     } finally {
       setExporting(false);
     }
@@ -83,7 +85,8 @@ export default function ExportSheet({
 
       {/* Sheet */}
       <div
-        className="relative w-full max-w-lg bg-surface rounded-t-2xl border border-border border-b-0 p-4 sm:p-5 pb-8 animate-scale-in"
+        className="relative w-full max-w-lg bg-surface rounded-t-2xl border border-border border-b-0 p-4 sm:p-5 max-h-[90dvh] overflow-y-auto overscroll-contain animate-scale-in"
+        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.5rem)' }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -164,17 +167,21 @@ export default function ExportSheet({
         </div>
 
         {/* Preview count */}
-        <p className="text-xs text-text-secondary mb-4">
-          {filtered.length === 0
+        <p className={`text-xs mb-4 ${invalidRange ? 'text-danger' : 'text-text-secondary'}`}>
+          {invalidRange
+            ? 'The “From” date is after the “To” date.'
+            : filtered.length === 0
             ? 'No transactions in this range'
             : `${filtered.length} transaction${filtered.length === 1 ? '' : 's'} found`}
         </p>
+
+        <InlineAlert message={error} onDismiss={() => setError(null)} />
 
         {/* Export button */}
         <button
           type="button"
           onClick={handleExport}
-          disabled={filtered.length === 0 || exporting}
+          disabled={filtered.length === 0 || exporting || invalidRange}
           className="w-full bg-primary text-white font-semibold text-sm py-3 rounded-xl disabled:opacity-40 flex items-center justify-center gap-2"
         >
           {exporting ? (

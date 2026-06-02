@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { ArrowLeft, Plus, Check, Trash2 } from 'lucide-react';
 import { parseAmountInput } from '../utils/amountParser';
+import { parseISODateLocal } from '../utils/dates';
 import type { Employee, Advance } from '../types';
 import ConfirmDialog from './ui/ConfirmDialog';
 
@@ -31,7 +32,7 @@ function groupAdvancesByMonth(advances: Advance[], salary: number): MonthGroup[]
   const groups = new Map<string, { advances: Advance[]; settledAt?: string }>();
 
   for (const adv of advances) {
-    const d = new Date(adv.settledAt ?? adv.date);
+    const d = parseISODateLocal(adv.settledAt ?? adv.date);
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
     const existing = groups.get(key) ?? { advances: [], settledAt: undefined };
     existing.advances.push(adv);
@@ -97,13 +98,26 @@ export default function EmployeeDetail({
   const currentMonthPendingList = useMemo(
     () =>
       pendingAdvances.filter((a) => {
-        const d = new Date(a.date);
+        const d = parseISODateLocal(a.date);
         return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
       }),
     [pendingAdvances, now],
   );
   const currentMonthPending = currentMonthPendingList.reduce((s, a) => s + a.amount, 0);
   const currentMonthRemaining = Math.max(0, employee.salary - currentMonthPending);
+  // What settlePayday actually clears: every pending advance dated on or before
+  // the end of this month (matches usePayroll). Use this for the settle
+  // button + net preview so the shown deduction equals what gets settled.
+  const endOfMonth = useMemo(() => {
+    const e = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    e.setHours(23, 59, 59, 999);
+    return e;
+  }, [now]);
+  const settleablePendingList = useMemo(
+    () => pendingAdvances.filter((a) => parseISODateLocal(a.date) <= endOfMonth),
+    [pendingAdvances, endOfMonth],
+  );
+  const settleablePending = settleablePendingList.reduce((s, a) => s + a.amount, 0);
   const nextMonthDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
   const nextMonthLabel = nextMonthDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   const monthGroups = useMemo(
@@ -203,7 +217,7 @@ export default function EmployeeDetail({
             >
               <Plus size={16} /> Record Advance
             </button>
-            {currentMonthPendingList.length > 0 && new Date().getDate() >= employee.payDay && (
+            {settleablePendingList.length > 0 && new Date().getDate() >= employee.payDay && (
               <button
                 onClick={() => setShowSettleConfirm(true)}
                 className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-bold bg-primary/10 text-primary hover:bg-primary/20 active:scale-[0.98] transition-all"
@@ -226,7 +240,7 @@ export default function EmployeeDetail({
               group.advances.map((adv) => (
                 <div key={adv.id} className="flex items-center justify-between text-sm mb-1.5">
                   <div className="text-text-secondary">
-                    {new Date(adv.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    {parseISODateLocal(adv.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                     {' — Advance '}
                     <span className="font-medium text-text-primary">{formatAmount(adv.amount, employee.currency)}</span>
                   </div>
@@ -244,12 +258,12 @@ export default function EmployeeDetail({
             )}
             {group.settledAt && !group.isCurrent && (
               <div className="text-xs text-text-secondary mt-1">
-                Settled {new Date(group.settledAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} — Paid {formatAmount(group.netPay, employee.currency)}
+                Settled {parseISODateLocal(group.settledAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} — Paid {formatAmount(group.netPay, employee.currency)}
               </div>
             )}
-            {group.isCurrent && currentMonthPending > 0 && (
+            {group.isCurrent && settleablePending > 0 && (
               <div className="text-sm font-semibold text-primary mt-2">
-                Net: {formatAmount(employee.salary - currentMonthPending, employee.currency)}
+                Net: {formatAmount(Math.max(employee.salary - settleablePending, 0), employee.currency)}
               </div>
             )}
             {!group.isCurrent && !group.settledAt && group.advances.length > 0 && (
@@ -273,7 +287,7 @@ export default function EmployeeDetail({
       {showSettleConfirm && (
         <ConfirmDialog
           title="Settle Payday"
-          message={`Pay ${employee.name} ${formatAmount(employee.salary - currentMonthPending, employee.currency)}? (Salary ${formatAmount(employee.salary, employee.currency)} minus ${formatAmount(currentMonthPending, employee.currency)} in advances)`}
+          message={`Pay ${employee.name} ${formatAmount(Math.max(employee.salary - settleablePending, 0), employee.currency)}? (Salary ${formatAmount(employee.salary, employee.currency)} minus ${formatAmount(settleablePending, employee.currency)} in advances)`}
           confirmLabel="Settle"
           onConfirm={handleSettle}
           onCancel={() => setShowSettleConfirm(false)}

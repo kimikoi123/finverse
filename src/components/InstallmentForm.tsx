@@ -55,7 +55,9 @@ export default function InstallmentForm({
     const total = parseAmountInput(totalAmount);
     const months = parseInt(totalMonths, 10);
     if (total > 0 && months > 0) {
-      setMonthlyPayment(String(Math.ceil(total / months)));
+      // Round to centavos instead of ceiling, so monthlyPayment × months
+      // doesn't overshoot the total.
+      setMonthlyPayment(String(Math.round((total / months) * 100) / 100));
     }
   }, [totalAmount, totalMonths]);
 
@@ -72,7 +74,7 @@ export default function InstallmentForm({
       totalAmount: parsedTotal,
       monthlyPayment: parseAmountInput(monthlyPayment),
       totalMonths: parsedMonths,
-      paidMonths: parseInt(paidMonths, 10) || 0,
+      paidMonths: Math.min(Math.max(parseInt(paidMonths, 10) || 0, 0), parsedMonths),
       startDate,
       creditCardAccountId: creditCardAccountId || undefined,
       currency,

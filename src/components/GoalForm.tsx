@@ -59,10 +59,8 @@ export default function GoalForm({
       setValidationError('Target amount must be greater than 0.');
       return;
     }
-    if (!hasLinkedAccount && parsedSaved > parsedTarget) {
-      setValidationError('Saved amount cannot exceed target.');
-      return;
-    }
+    // Over-funding (saved > target) is legitimate — you exceeded your goal —
+    // so it must never block saving edits to other fields.
     if (deadline && deadline < minDeadline) {
       setValidationError('Deadline must be in the future.');
       return;

@@ -23,13 +23,15 @@ function ToastItem({
     <div className="glass ring-1 ring-white/[0.03] rounded-2xl shadow-layered-lg overflow-hidden animate-slide-up">
       <div className="flex items-center gap-3 px-4 py-3.5">
         <p className="text-sm text-text-primary flex-1">{toast.message}</p>
-        <button
-          onClick={() => onUndo(toast.id)}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-light/80 hover:text-primary bg-primary/8 hover:bg-primary/15 rounded-lg transition-all active:scale-95"
-        >
-          <Undo2 size={11} />
-          Undo
-        </button>
+        {toast.undoable && (
+          <button
+            onClick={() => onUndo(toast.id)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-light/80 hover:text-primary bg-primary/8 hover:bg-primary/15 rounded-lg transition-all active:scale-95"
+          >
+            <Undo2 size={11} />
+            Undo
+          </button>
+        )}
         <button
           onClick={() => onDismiss(toast.id)}
           aria-label="Dismiss notification"

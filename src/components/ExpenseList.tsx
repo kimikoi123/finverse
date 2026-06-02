@@ -12,7 +12,7 @@ interface ExpenseListProps {
   onRemove: (id: string) => void;
   onEdit: (expense: Expense) => void;
   onQuickEdit: (id: string, updates: Partial<Expense>) => void;
-  showToast: (message: string, onCommit: () => void) => string;
+  showToast: (message: string, onCommit?: () => void) => string;
 }
 
 export default function ExpenseList({ expenses, members, customCategories, onRemove, onEdit, onQuickEdit, showToast }: ExpenseListProps) {
@@ -26,13 +26,18 @@ export default function ExpenseList({ expenses, members, customCategories, onRem
 
   useEffect(() => {
     if (!openPaidByDropdown) return;
-    const handleClickOutside = (e: MouseEvent) => {
+    const handleClickOutside = (e: Event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setOpenPaidByDropdown(null);
       }
     };
+    // Listen for touchstart too, so tap-away dismisses on mobile.
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
   }, [openPaidByDropdown]);
 
   useEffect(() => {
@@ -302,13 +307,13 @@ export default function ExpenseList({ expenses, members, customCategories, onRem
       {/* Receipt Photo Viewer Modal */}
       {viewingReceipt && (
         <div
-          className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto"
           onClick={() => setViewingReceipt(null)}
         >
           <div className="relative max-w-lg w-full animate-scale-in" onClick={(e) => e.stopPropagation()}>
             <button
               onClick={() => setViewingReceipt(null)}
-              className="absolute -top-3 -right-3 z-10 p-2 bg-surface-elevated rounded-full border border-border text-text-secondary hover:text-text-primary transition-all shadow-layered-md"
+              className="absolute top-2 right-2 z-10 p-2 bg-surface-elevated/90 rounded-full border border-border text-text-secondary hover:text-text-primary transition-all shadow-layered-md"
               aria-label="Close receipt viewer"
             >
               <X size={14} />
@@ -316,7 +321,7 @@ export default function ExpenseList({ expenses, members, customCategories, onRem
             <img
               src={viewingReceipt}
               alt="Receipt"
-              className="w-full rounded-2xl border border-border"
+              className="w-full max-h-[85dvh] object-contain rounded-2xl border border-border"
             />
           </div>
         </div>

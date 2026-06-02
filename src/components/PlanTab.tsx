@@ -3,6 +3,7 @@ import TripList from './TripList';
 import TripDashboard from './TripDashboard';
 import type { Trip, DeletedTrip, Member, Expense, Transaction, Goal, DebtEntry, Installment, Employee, ExchangeRates, RateSource } from '../types';
 import type { BudgetWithSpending } from '../hooks/useBudgets';
+import { todayISO } from '../utils/dates';
 
 interface ExchangeRateState {
   rates: ExchangeRates;
@@ -42,7 +43,7 @@ interface PlanTabProps {
   onOpenDebts: () => void;
   onOpenInstallments: () => void;
   onOpenPayroll: () => void;
-  showToast: (message: string, onCommit: () => void) => string;
+  showToast: (message: string, onCommit?: () => void) => string;
 }
 
 export default function PlanTab({
@@ -93,7 +94,7 @@ export default function PlanTab({
     );
   }
 
-  const today = new Date().toISOString().split('T')[0] ?? '';
+  const today = todayISO();
   const plannedCount = transactions.filter(
     (t) => t.isRecurring || t.date > today,
   ).length;
