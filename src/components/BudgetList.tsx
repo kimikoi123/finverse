@@ -111,11 +111,11 @@ function CommitmentCard({
         </div>
         <p className="text-xs text-text-secondary mt-0.5">{secondary.text}</p>
       </div>
-      <div className="flex items-center gap-1 shrink-0">
+      <div className="flex items-center gap-0.5 shrink-0 -my-1.5 -mr-1.5">
         <button
           type="button"
           onClick={(e) => { e.stopPropagation(); onEdit(); }}
-          className="p-1.5 rounded-lg text-text-tertiary hover:text-text-primary hover:bg-surface-light transition-colors"
+          className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-text-tertiary hover:text-text-primary hover:bg-surface-light transition-colors"
           aria-label={`Edit ${budget.name}`}
         >
           <Pencil className="w-4 h-4" />
@@ -123,7 +123,7 @@ function CommitmentCard({
         <button
           type="button"
           onClick={(e) => { e.stopPropagation(); onDelete(); }}
-          className="p-1.5 rounded-lg text-text-tertiary hover:text-danger hover:bg-surface-light transition-colors"
+          className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-text-tertiary hover:text-danger hover:bg-surface-light transition-colors"
           aria-label={`Delete ${budget.name}`}
         >
           <Trash2 className="w-4 h-4" />

@@ -271,10 +271,12 @@ export default function AddAccountFlow({
     };
 
     if (accountType === 'credit') {
+      // Assign explicitly (incl. undefined) so editing can CLEAR a previously
+      // set limit/due-day — omitting the key would merge-preserve the old value.
       const cl = parseAmountInput(creditLimit);
-      if (cl > 0) data.creditLimit = cl;
+      data.creditLimit = cl > 0 ? cl : undefined;
       const dd = parseInt(dueDay, 10);
-      if (!isNaN(dd) && dd >= 1 && dd <= 31) data.dueDay = dd;
+      data.dueDay = !isNaN(dd) && dd >= 1 && dd <= 31 ? dd : undefined;
     }
 
     if (category === 'stocks' || category === 'crypto') {

@@ -1,18 +1,26 @@
 const K_REGEX = /^(\d+(?:\.\d+)?)\s*k$/i;
 
-export function parseAmountInput(raw: string): number {
-  const trimmed = raw.trim();
-  if (!trimmed) return 0;
+// Strip en-US grouping commas before parsing. The app renders amounts
+// comma-grouped everywhere (toLocaleString('en-US') / PHP formatting) and
+// decimals always use '.', so commas are unambiguously thousands separators.
+// Without this, parseFloat('25,000') === 25 — silently corrupting input.
+function stripGrouping(raw: string): string {
+  return raw.trim().replace(/,/g, '');
+}
 
-  const kMatch = trimmed.match(K_REGEX);
+export function parseAmountInput(raw: string): number {
+  const cleaned = stripGrouping(raw);
+  if (!cleaned) return 0;
+
+  const kMatch = cleaned.match(K_REGEX);
   if (kMatch) return parseFloat(kMatch[1]!) * 1000;
 
-  const val = parseFloat(trimmed);
+  const val = parseFloat(cleaned);
   return val > 0 ? val : 0;
 }
 
 export function isKNotation(raw: string): boolean {
-  return K_REGEX.test(raw.trim());
+  return K_REGEX.test(stripGrouping(raw));
 }
 
 export type AmountValidation =
@@ -20,16 +28,16 @@ export type AmountValidation =
   | { ok: false; reason: 'empty' | 'invalid' | 'negative' | 'zero' };
 
 export function validateAmountInput(raw: string): AmountValidation {
-  const trimmed = raw.trim();
-  if (!trimmed) return { ok: false, reason: 'empty' };
+  const cleaned = stripGrouping(raw);
+  if (!cleaned) return { ok: false, reason: 'empty' };
 
-  const kMatch = trimmed.match(K_REGEX);
+  const kMatch = cleaned.match(K_REGEX);
   if (kMatch) {
     const value = parseFloat(kMatch[1]!) * 1000;
     return value > 0 ? { ok: true, value } : { ok: false, reason: 'zero' };
   }
 
-  const val = parseFloat(trimmed);
+  const val = parseFloat(cleaned);
   if (isNaN(val)) return { ok: false, reason: 'invalid' };
   if (val < 0) return { ok: false, reason: 'negative' };
   if (val === 0) return { ok: false, reason: 'zero' };

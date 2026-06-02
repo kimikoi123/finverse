@@ -82,8 +82,8 @@ export default function PairingModal({ onClose, initialDeviceCount }: Props) {
   }, [joined, onClose]);
 
   return (
-    <div className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm flex items-center justify-center px-4">
-      <div className="w-full max-w-sm bg-bg rounded-2xl border border-border shadow-xl overflow-hidden">
+    <div className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="w-full max-w-sm bg-bg rounded-2xl border border-border shadow-xl overflow-y-auto max-h-[90dvh] overscroll-contain">
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
           <h2 className="text-sm font-semibold text-text-primary">Pair new device</h2>
           <button

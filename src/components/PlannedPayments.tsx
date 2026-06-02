@@ -4,6 +4,7 @@ import type { Transaction } from '../types';
 import { formatCurrency } from '../utils/currencies';
 import { getFinanceCategoryDef } from '../utils/categories';
 import { getNextRecurringDate, formatRecurringLabel } from '../utils/forecast';
+import ConfirmDialog from './ui/ConfirmDialog';
 
 interface PlannedPaymentsProps {
   transactions: Transaction[];
@@ -48,6 +49,7 @@ export default function PlannedPayments({
   onBack,
 }: PlannedPaymentsProps) {
   const [activeFilter, setActiveFilter] = useState<FilterValue>('all');
+  const [pendingDelete, setPendingDelete] = useState<Transaction | null>(null);
   const today = isoToday();
 
   const { recurring, scheduled } = useMemo(() => {
@@ -189,21 +191,23 @@ export default function PlannedPayments({
                         <div className="text-xs text-text-secondary">
                           <span>Next: {formatDate(txn.nextDate)}</span>
                           {txn.recurringEndDate && (
-                            <span className="ml-2 text-text-secondary/60">Ends: {txn.recurringEndDate}</span>
+                            <span className="ml-2 text-text-secondary/60">Ends: {formatISODate(txn.recurringEndDate)}</span>
                           )}
                         </div>
-                        <div className="flex gap-1">
+                        <div className="flex gap-0.5 -my-1.5 -mr-1.5">
                           <button
                             type="button"
                             onClick={() => onEdit(txn)}
-                            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface-hover transition-colors"
+                            aria-label="Edit planned payment"
+                            className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-surface-hover transition-colors"
                           >
                             <Pencil size={14} className="text-text-secondary" />
                           </button>
                           <button
                             type="button"
-                            onClick={() => onDelete(txn.id)}
-                            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-danger/10 transition-colors"
+                            onClick={() => setPendingDelete(txn)}
+                            aria-label="Delete planned payment"
+                            className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-danger/10 transition-colors"
                           >
                             <Trash2 size={14} className="text-danger" />
                           </button>
@@ -275,18 +279,20 @@ export default function PlannedPayments({
                         <p className="text-xs text-text-secondary">
                           {days === 0 ? 'Due today' : `In ${days} day${days !== 1 ? 's' : ''}`}
                         </p>
-                        <div className="flex gap-1">
+                        <div className="flex gap-0.5 -my-1.5 -mr-1.5">
                           <button
                             type="button"
                             onClick={() => onEdit(txn)}
-                            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface-hover transition-colors"
+                            aria-label="Edit scheduled payment"
+                            className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-surface-hover transition-colors"
                           >
                             <Pencil size={14} className="text-text-secondary" />
                           </button>
                           <button
                             type="button"
-                            onClick={() => onDelete(txn.id)}
-                            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-danger/10 transition-colors"
+                            onClick={() => setPendingDelete(txn)}
+                            aria-label="Delete scheduled payment"
+                            className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-danger/10 transition-colors"
                           >
                             <Trash2 size={14} className="text-danger" />
                           </button>
@@ -299,6 +305,14 @@ export default function PlannedPayments({
             </div>
           )}
         </>
+      )}
+
+      {pendingDelete && (
+        <ConfirmDialog
+          title={`Delete "${pendingDelete.description || getFinanceCategoryDef(pendingDelete.category).label}"?`}
+          onConfirm={() => { onDelete(pendingDelete.id); setPendingDelete(null); }}
+          onCancel={() => setPendingDelete(null)}
+        />
       )}
     </div>
   );

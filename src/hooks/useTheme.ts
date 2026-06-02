@@ -6,7 +6,12 @@ type ResolvedTheme = 'light' | 'dark';
 export function useTheme() {
   const [theme, setThemeState] = useState<ThemePreference>(() => {
     try {
-      const stored = localStorage.getItem('user-theme');
+      // Tolerate both the raw value this hook writes ("dark") and the legacy
+      // JSON-quoted form ('"dark"') that older builds persisted — the boot
+      // script in index.html already accepts both. Without this, a quoted
+      // value silently falls through to 'system' and the theme resets.
+      const raw = localStorage.getItem('user-theme');
+      const stored = raw?.replace(/^"|"$/g, '');
       if (stored === 'light' || stored === 'dark' || stored === 'system') return stored;
     } catch {}
     return 'system';

@@ -4,6 +4,7 @@ import { useSync } from '../../hooks/useSync';
 import DevicesList from './DevicesList';
 import PairEntryScreen from './PairEntryScreen';
 import PairingModal from './PairingModal';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
 
 // The real "Sync & Devices" section used in Settings. Replaces the
 // temporary SyncDevSection from Phase 3.
@@ -21,6 +22,7 @@ export default function SyncSettingsSection() {
   const [pairEntryOpen, setPairEntryOpen] = useState(false);
   const [devicesRefreshKey, setDevicesRefreshKey] = useState(0);
   const [deviceCount, setDeviceCount] = useState(0);
+  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
 
   async function handleBootstrap() {
     setBusy(true);
@@ -163,15 +165,7 @@ export default function SyncSettingsSection() {
                 <DevicesList refreshKey={devicesRefreshKey} onCountChange={setDeviceCount} />
               </div>
               <button
-                onClick={async () => {
-                  if (
-                    confirm(
-                      'Sign out of sync on this device? Your data stays here, and other paired devices are unaffected.',
-                    )
-                  ) {
-                    await sync.signOutLocal();
-                  }
-                }}
+                onClick={() => setShowSignOutConfirm(true)}
                 className="flex justify-between items-center py-3 px-4 w-full text-left hover:bg-surface-light transition-colors"
               >
                 <span className="text-sm text-danger">Sign out on this device</span>
@@ -194,6 +188,19 @@ export default function SyncSettingsSection() {
       )}
 
       {pairEntryOpen && <PairEntryScreen onClose={() => setPairEntryOpen(false)} />}
+
+      {showSignOutConfirm && (
+        <ConfirmDialog
+          title="Sign out on this device?"
+          message="Your data stays here, and other paired devices are unaffected."
+          confirmLabel="Sign out"
+          onConfirm={() => {
+            setShowSignOutConfirm(false);
+            void sync.signOutLocal();
+          }}
+          onCancel={() => setShowSignOutConfirm(false)}
+        />
+      )}
     </>
   );
 }

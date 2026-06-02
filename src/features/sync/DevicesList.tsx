@@ -82,7 +82,7 @@ export default function DevicesList({ refreshKey = 0, onCountChange }: Props) {
             onClick={() => void handleRevoke(d)}
             disabled={revokingId === d.id}
             aria-label={`Revoke ${d.label ?? 'device'}`}
-            className="text-text-secondary/60 hover:text-danger transition-colors p-1 disabled:opacity-40"
+            className="-my-2 -mr-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-text-secondary/60 hover:text-danger hover:bg-surface-light transition-colors disabled:opacity-40"
           >
             <Trash2 size={14} />
           </button>

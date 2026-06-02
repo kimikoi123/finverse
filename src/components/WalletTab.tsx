@@ -17,7 +17,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { Plus, TrendingUp } from 'lucide-react';
 import type { Account } from '../types';
-import { formatCurrency, CURRENCIES, isPrivacyMode } from '../utils/currencies';
+import { formatCurrency } from '../utils/currencies';
 import { getInstitution } from '../utils/institutions';
 import { buildCardBackground, CARD_INSET_SHADOW } from '../utils/accountColors';
 import LogoBadge from './ui/LogoBadge';
@@ -60,21 +60,21 @@ function DebitCard({ account, onClick }: { account: Account; onClick: () => void
     <button
       type="button"
       onClick={onClick}
-      className="rounded-2xl p-4 min-h-[140px] h-full w-full flex flex-col justify-between text-left hover:brightness-110 active:scale-[0.98] transition-all"
+      className="rounded-2xl p-4 min-h-[140px] h-full w-full flex flex-col justify-between text-left overflow-hidden hover:brightness-110 active:scale-[0.98] transition-all"
       style={{ background: buildCardBackground(account), boxShadow: CARD_INSET_SHADOW }}
     >
-      <div>
-        <div className="flex items-center gap-2">
+      <div className="min-w-0">
+        <div className="flex items-center gap-2 min-w-0">
           <LogoBadge logo={inst?.logo} name={inst?.name ?? account.name} color="rgba(255,255,255,0.2)" size="sm" variant="rounded" />
-          <span className="font-semibold text-sm text-white">{account.name}</span>
+          <span className="font-semibold text-sm text-white truncate">{account.name}</span>
         </div>
         <p className="text-xs text-white/70 mt-1">
           {typeLabel} &bull; {account.currency}
         </p>
       </div>
-      <div>
+      <div className="min-w-0">
         <p className="text-[10px] text-white/60 uppercase">Balance</p>
-        <p className="text-lg font-bold text-white">
+        <p className="text-base sm:text-lg font-bold text-white tabular-nums truncate">
           {formatCurrency(account.balance, account.currency)}
         </p>
         {account.interestRate != null && (
@@ -90,20 +90,19 @@ function CreditCard({ account, onClick }: { account: Account; onClick: () => voi
   const limit = account.creditLimit ?? 0;
   const usagePercent = limit > 0 ? Math.min((account.balance / limit) * 100, 100) : 0;
   const remaining = Math.max(limit - account.balance, 0);
-  const currencySymbol = CURRENCIES[account.currency]?.symbol ?? '';
 
   return (
     <button
       type="button"
       onClick={onClick}
-      className="rounded-2xl p-4 min-h-[140px] h-full w-full flex flex-col justify-between text-left hover:brightness-110 active:scale-[0.98] transition-all"
+      className="rounded-2xl p-4 min-h-[140px] h-full w-full flex flex-col justify-between text-left overflow-hidden hover:brightness-110 active:scale-[0.98] transition-all"
       style={{ background: buildCardBackground(account), boxShadow: CARD_INSET_SHADOW }}
     >
-      <div>
-        <div className="flex items-center gap-2">
+      <div className="min-w-0">
+        <div className="flex items-center gap-2 min-w-0">
           <LogoBadge logo={inst?.logo} name={inst?.name ?? account.name} color="rgba(255,255,255,0.2)" size="sm" variant="rounded" />
-          <span className="font-semibold text-sm text-white flex-1">{account.name}</span>
-          <span className="text-white/50 text-sm">...</span>
+          <span className="font-semibold text-sm text-white flex-1 truncate">{account.name}</span>
+          <span className="text-white/50 text-sm shrink-0">...</span>
         </div>
         <p className="text-xs text-white/70 mt-1">
           Credit &bull; {account.currency}
@@ -117,16 +116,16 @@ function CreditCard({ account, onClick }: { account: Account; onClick: () => voi
             style={{ width: `${usagePercent}%` }}
           />
         </div>
-        <div className="flex justify-between mt-1">
-          <span className="text-[10px] text-white/60">{Math.round(usagePercent)}% used</span>
-          <span className="text-[10px] text-white/60">
-            {isPrivacyMode() ? '••••' : `${currencySymbol}${remaining.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} left
+        <div className="flex justify-between gap-2 mt-1">
+          <span className="text-[10px] text-white/60 shrink-0">{Math.round(usagePercent)}% used</span>
+          <span className="text-[10px] text-white/60 tabular-nums truncate">
+            {formatCurrency(remaining, account.currency)} left
           </span>
         </div>
       </div>
-      <div>
+      <div className="min-w-0">
         <p className="text-[10px] text-white/60 uppercase">Used Credit</p>
-        <p className="text-lg font-bold text-white">
+        <p className="text-base sm:text-lg font-bold text-white tabular-nums truncate">
           {formatCurrency(account.balance, account.currency)}
         </p>
       </div>
@@ -144,23 +143,23 @@ function InvestmentCard({ account, onClick }: { account: Account; onClick: () =>
     <button
       type="button"
       onClick={onClick}
-      className="rounded-2xl p-4 min-h-[140px] h-full w-full flex flex-col justify-between text-left hover:brightness-110 active:scale-[0.98] transition-all"
+      className="rounded-2xl p-4 min-h-[140px] h-full w-full flex flex-col justify-between text-left overflow-hidden hover:brightness-110 active:scale-[0.98] transition-all"
       style={{ background: buildCardBackground(account), boxShadow: CARD_INSET_SHADOW }}
     >
-      <div>
-        <div className="flex items-center gap-2">
-          <TrendingUp className="w-5 h-5 text-white" />
-          <span className="font-semibold text-sm text-white">{account.name}</span>
+      <div className="min-w-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <TrendingUp className="w-5 h-5 text-white shrink-0" />
+          <span className="font-semibold text-sm text-white truncate">{account.name}</span>
         </div>
-        <p className="text-xs text-white/70 mt-1">
+        <p className="text-xs text-white/70 mt-1 truncate">
           {typeLabel}
           {account.ticker && <> &bull; {account.ticker}</>}
           {' '}&bull; {account.currency}
         </p>
       </div>
-      <div>
+      <div className="min-w-0">
         <p className="text-[10px] text-white/60 uppercase">Balance</p>
-        <p className="text-lg font-bold text-white">
+        <p className="text-base sm:text-lg font-bold text-white tabular-nums truncate">
           {formatCurrency(totalValue, account.currency)}
         </p>
         <p className="text-[10px] text-white/60">
@@ -226,9 +225,9 @@ export default function WalletTab({
   const filtered = filterAccounts(accounts, filter);
 
   const filterDescription: Record<FilterType, string> = {
-    all: 'Debit balances and investments',
+    all: 'Assets minus credit-card debt',
     debit: 'Debit and e-wallet balances',
-    credit: 'Credit card balances',
+    credit: 'Total owed across credit cards',
     investments: 'Stock and crypto holdings',
   };
 
@@ -341,41 +340,52 @@ export default function WalletTab({
         ))}
       </div>
 
-      {/* Hint text */}
-      <p className="text-xs text-text-secondary mb-3">
-        Press and hold an account card to rearrange it.
-      </p>
+      {/* Hint text — reordering is only available in the unfiltered view, where
+          card order maps 1:1 to the stored sortOrder. */}
+      {filter === 'all' && (
+        <p className="text-xs text-text-secondary mb-3">
+          Press and hold an account card to rearrange it.
+        </p>
+      )}
 
       {/* Account Cards Grid */}
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-      >
-        <SortableContext
-          items={filtered.map((a) => a.id)}
-          strategy={rectSortingStrategy}
+      {filter === 'all' ? (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
         >
-          <div className="grid grid-cols-2 gap-3">
-            {filtered.map((account) => (
-              <SortableAccountCard
-                key={account.id}
-                account={account}
-                onSelect={onSelectAccount}
-              />
-            ))}
-          </div>
-        </SortableContext>
-
-        <DragOverlay>
-          {activeAccount ? (
-            <div className="scale-105 shadow-xl rounded-2xl">
-              <AccountCard account={activeAccount} onSelect={() => {}} />
+          <SortableContext
+            items={filtered.map((a) => a.id)}
+            strategy={rectSortingStrategy}
+          >
+            <div className="grid grid-cols-2 gap-3">
+              {filtered.map((account) => (
+                <SortableAccountCard
+                  key={account.id}
+                  account={account}
+                  onSelect={onSelectAccount}
+                />
+              ))}
             </div>
-          ) : null}
-        </DragOverlay>
-      </DndContext>
+          </SortableContext>
+
+          <DragOverlay>
+            {activeAccount ? (
+              <div className="scale-105 shadow-xl rounded-2xl">
+                <AccountCard account={activeAccount} onSelect={() => {}} />
+              </div>
+            ) : null}
+          </DragOverlay>
+        </DndContext>
+      ) : (
+        <div className="grid grid-cols-2 gap-3">
+          {filtered.map((account) => (
+            <AccountCard key={account.id} account={account} onSelect={onSelectAccount} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

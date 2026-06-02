@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Share2, Copy, Check, X } from 'lucide-react';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 
 interface ShareDialogProps {
   shareUrl: string;
@@ -8,6 +9,33 @@ interface ShareDialogProps {
 
 export default function ShareDialog({ shareUrl, onClose }: ShareDialogProps) {
   const [copied, setCopied] = useState(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  useEscapeKey(onClose);
+
+  // Move focus into the dialog and trap Tab within it (matches ConfirmDialog).
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    const focusable = dialog.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    first?.focus();
+    const handleTab = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return;
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last?.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first?.focus();
+      }
+    };
+    dialog.addEventListener('keydown', handleTab);
+    return () => dialog.removeEventListener('keydown', handleTab);
+  }, []);
 
   const handleCopy = async () => {
     try {
@@ -33,7 +61,8 @@ export default function ShareDialog({ shareUrl, onClose }: ShareDialogProps) {
 
       {/* Dialog */}
       <div
-        className="relative bg-surface border border-border rounded-2xl p-6 w-full max-w-md shadow-layered-lg ring-1 ring-white/[0.03] animate-scale-in"
+        ref={dialogRef}
+        className="relative bg-surface border border-border rounded-2xl p-6 w-full max-w-md max-h-[90dvh] overflow-y-auto shadow-layered-lg ring-1 ring-white/[0.03] animate-scale-in"
         role="dialog"
         aria-modal="true"
         aria-labelledby="share-dialog-title"

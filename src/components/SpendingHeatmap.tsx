@@ -192,6 +192,8 @@ export default function SpendingHeatmap({
                 key={day.day}
                 type="button"
                 title={tooltip}
+                aria-label={tooltip}
+                aria-pressed={isSelected}
                 onClick={() =>
                   setSelectedDay(isSelected ? null : day.day)
                 }

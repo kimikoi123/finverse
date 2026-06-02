@@ -20,6 +20,17 @@ export default function QrScanner({ onDetect, onError, active }: Props) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const detectedRef = useRef(false);
 
+  // Keep the latest callbacks in refs so the camera effect can depend only on
+  // `active`. Otherwise a new onDetect/onError identity (e.g. an inline arrow
+  // from the parent) tears down and re-acquires getUserMedia every render,
+  // causing a visible camera flicker on iOS Safari.
+  const onDetectRef = useRef(onDetect);
+  const onErrorRef = useRef(onError);
+  useEffect(() => {
+    onDetectRef.current = onDetect;
+    onErrorRef.current = onError;
+  });
+
   useEffect(() => {
     if (!active) return;
     let stream: MediaStream | null = null;
@@ -122,13 +133,13 @@ export default function QrScanner({ onDetect, onError, active }: Props) {
     function handleDetection(value: string) {
       if (detectedRef.current) return;
       detectedRef.current = true;
-      onDetect(value);
+      onDetectRef.current(value);
     }
 
     function emitError(message: string) {
       setStatus('error');
       setErrorMessage(message);
-      onError?.(message);
+      onErrorRef.current?.(message);
     }
 
     void start();
@@ -141,7 +152,7 @@ export default function QrScanner({ onDetect, onError, active }: Props) {
       }
       stream?.getTracks().forEach((t) => t.stop());
     };
-  }, [active, onDetect, onError]);
+  }, [active]);
 
   return (
     <div className="relative w-full aspect-square overflow-hidden rounded-2xl bg-surface border border-border">

@@ -22,7 +22,7 @@ export default function ActionMenu({ onAddExpense, onAddIncome, onNewTrip, onAdd
       />
       {/* Bottom sheet */}
       <div
-        className="absolute bottom-0 left-0 right-0 bg-surface rounded-t-3xl p-5 animate-slide-up border-t border-border"
+        className="absolute bottom-0 left-0 right-0 max-h-[85dvh] overflow-y-auto overscroll-contain bg-surface rounded-t-3xl p-5 animate-slide-up border-t border-border"
         role="dialog"
         aria-modal="true"
         aria-label="Quick actions"

@@ -36,10 +36,10 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-bg flex items-center justify-center px-6">
+    <div className="fixed inset-0 z-50 bg-bg overflow-y-auto flex flex-col">
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-sm flex flex-col items-center gap-8"
+        className="w-full max-w-sm mx-auto my-auto flex flex-col items-center gap-8 px-6 py-8 min-h-dvh justify-center"
       >
         {/* Icon + heading */}
         <div className="flex flex-col items-center gap-3">
@@ -73,6 +73,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               placeholder="Your name"
+              maxLength={40}
               autoFocus
               className="bg-surface border border-border rounded-xl py-3 px-4 text-sm text-text-primary placeholder:text-text-secondary/50 outline-none focus:ring-2 focus:ring-primary/40 transition-shadow"
             />

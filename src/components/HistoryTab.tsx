@@ -3,6 +3,7 @@ import { Search, X, Inbox, Pencil, Trash2, Download, Upload } from 'lucide-react
 import type { Transaction, Account } from '../types';
 import { formatCurrency } from '../utils/currencies';
 import { getFinanceCategoryDef } from '../utils/categories';
+import { todayISO, yesterdayISO } from '../utils/dates';
 import { TOAST_DURATION } from '../hooks/useToast';
 import ExportSheet from './ExportSheet';
 import ImportStatementSheet from './ImportStatementSheet';
@@ -15,7 +16,7 @@ interface HistoryTabProps {
   onEdit?: (transaction: Transaction) => void;
   onDelete?: (id: string) => void;
   onImport?: (txns: Omit<Transaction, 'id' | 'createdAt'>[]) => Promise<unknown>;
-  showToast?: (message: string, onCommit: () => void) => string;
+  showToast?: (message: string, onCommit?: () => void) => string;
 }
 
 type FilterType = 'all' | 'income' | 'expense';
@@ -66,11 +67,10 @@ export default function HistoryTab({ transactions, accounts, defaultCurrency, di
   }, [transactions, filter, search, pendingDeletes]);
 
   const groupedByDate = useMemo(() => {
-    const today = new Date();
-    const todayStr = today.toISOString().slice(0, 10);
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = yesterday.toISOString().slice(0, 10);
+    // Local calendar dates — transaction dates are stored as local ISO, so
+    // comparing against UTC slices mislabels TODAY/YESTERDAY in PHT (UTC+8).
+    const todayStr = todayISO();
+    const yesterdayStr = yesterdayISO();
 
     const groups: { label: string; date: string; transactions: Transaction[] }[] = [];
     const dateMap = new Map<string, Transaction[]>();

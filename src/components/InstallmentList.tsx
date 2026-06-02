@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ArrowLeft, Plus, Pencil, Trash2, CheckCircle, CreditCard } from 'lucide-react';
 import type { Installment, Account } from '../types';
 import { formatCurrency } from '../utils/currencies';
+import { parseISODateLocal } from '../utils/dates';
 import ConfirmDialog from './ui/ConfirmDialog';
 
 interface InstallmentListProps {
@@ -15,13 +16,15 @@ interface InstallmentListProps {
 }
 
 function getEstimatedEndDate(startDate: string, totalMonths: number): string {
-  const d = new Date(startDate);
-  d.setMonth(d.getMonth() + totalMonths);
-  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short' });
+  const d = parseISODateLocal(startDate);
+  // Add months from the 1st to avoid setMonth() overflow on month-end starts
+  // (e.g. Jan 31 + 1 month would skip to early March).
+  const end = new Date(d.getFullYear(), d.getMonth() + totalMonths, 1);
+  return end.toLocaleDateString(undefined, { year: 'numeric', month: 'short' });
 }
 
 function formatStartDate(startDate: string): string {
-  return new Date(startDate).toLocaleDateString(undefined, {
+  return parseISODateLocal(startDate).toLocaleDateString(undefined, {
     year: 'numeric',
     month: 'short',
   });

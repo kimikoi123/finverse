@@ -7,6 +7,7 @@ import { buildCardBackground, CARD_INSET_SHADOW } from '../utils/accountColors';
 import { parseAmountInput } from '../utils/amountParser';
 import { getFinanceCategoryDef } from '../utils/categories';
 import { computeForecast } from '../utils/forecast';
+import { formatDisplayDate } from '../utils/dates';
 import AccountCharts from './AccountCharts';
 import ConfirmDialog from './ui/ConfirmDialog';
 import LogoBadge from './ui/LogoBadge';
@@ -58,7 +59,7 @@ function TransactionRow({ transaction }: { transaction: Transaction }) {
         <p className={`text-sm font-semibold ${isIncome ? 'text-success' : 'text-danger'}`}>
           {isIncome ? '+' : '-'}{formatCurrency(transaction.amount, transaction.currency)}
         </p>
-        <p className="text-[10px] text-text-secondary">{transaction.date}</p>
+        <p className="text-[10px] text-text-secondary">{formatDisplayDate(transaction.date)}</p>
       </div>
     </div>
   );

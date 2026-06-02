@@ -1,4 +1,5 @@
 import { formatCurrency } from '../utils/currencies';
+import { parseISODateLocal } from '../utils/dates';
 import type { Transaction } from '../types';
 
 interface AccountChartsProps {
@@ -100,7 +101,7 @@ function IncomeExpenseDonut({
 
   const monthTransactions = transactions.filter((t) => {
     if (t.accountId !== accountId) return false;
-    const d = new Date(t.date);
+    const d = parseISODateLocal(t.date);
     return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
   });
 

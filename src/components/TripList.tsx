@@ -14,7 +14,7 @@ interface TripListProps {
   onRestore: (id: string) => void;
   onPermanentlyDelete: (id: string) => void;
   onEmptyTrash: () => void;
-  showToast: (message: string, onCommit: () => void) => string;
+  showToast: (message: string, onCommit?: () => void) => string;
 }
 
 function timeAgo(dateStr: string): string {
@@ -67,7 +67,7 @@ export default function TripList({
     if (!name.trim()) return;
     onCreate(name.trim(), currency);
     setName('');
-    setCurrency('USD');
+    setCurrency('PHP');
     setShowForm(false);
   };
 
@@ -231,7 +231,7 @@ export default function TripList({
                             </span>
                             <span className="flex items-center gap-1">
                               <Receipt size={11} />
-                              {trip.expenses.length}
+                              {trip.expenses.filter(e => !e.isSettlement).length}
                             </span>
                             <span>Deleted {timeAgo(deletedAt)}</span>
                           </div>

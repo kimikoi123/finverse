@@ -199,11 +199,11 @@ function App() {
       await editTransaction(editingTransaction.id, txn);
       setEditingTransaction(null);
       setShowTransactionForm(null);
-      showToast('Transaction updated', () => {});
+      showToast('Transaction updated');
     } else {
       await addTransaction(txn);
       setShowTransactionForm(null);
-      showToast(txn.type === 'expense' ? 'Expense added' : 'Income added', () => {});
+      showToast(txn.type === 'expense' ? 'Expense added' : 'Income added');
     }
     setQuickAddData(null);
   }, [addTransaction, editTransaction, editingTransaction, showToast]);
@@ -216,10 +216,10 @@ function App() {
   const handleSaveRule = useCallback(async (data: Omit<Rule, 'id' | 'createdAt'>) => {
     if (editingRule) {
       await editRule(editingRule.id, data);
-      showToast('Rule updated', () => {});
+      showToast('Rule updated');
     } else {
       await addRule(data);
-      showToast('Rule saved', () => {});
+      showToast('Rule saved');
     }
     setShowRuleForm(false);
     setEditingRule(null);
@@ -229,7 +229,7 @@ function App() {
     for (const u of updates) {
       await editTransaction(u.id, { category: u.category });
     }
-    showToast(`Recategorized ${updates.length} transaction${updates.length === 1 ? '' : 's'}`, () => {});
+    showToast(`Recategorized ${updates.length} transaction${updates.length === 1 ? '' : 's'}`);
   }, [editTransaction, showToast]);
 
   const handleEditTransaction = useCallback((txn: Transaction) => {
@@ -246,11 +246,11 @@ function App() {
       await editAccount(editingAccount.id, data);
       setShowAddAccountFlow(false);
       setEditingAccount(null);
-      showToast('Account updated', () => {});
+      showToast('Account updated');
     } else {
       await addAccount(data);
       setShowAddAccountFlow(false);
-      showToast('Account added', () => {});
+      showToast('Account added');
     }
   }, [editingAccount, editAccount, addAccount, showToast]);
 
@@ -259,10 +259,10 @@ function App() {
     setShowAddAccountFlow(true);
   }, []);
 
-  const handleDeleteAccount = useCallback(async (id: string) => {
-    await removeAccount(id);
+  const handleDeleteAccount = useCallback((id: string) => {
     setSelectedAccountId(null);
-    showToast('Account deleted', () => {});
+    // Deferred delete: Undo cancels before the toast commits.
+    showToast('Account deleted', () => { void removeAccount(id); });
   }, [removeAccount, showToast]);
 
   const handleTransfer = useCallback(async (fromId: string, toId: string, amount: number) => {
@@ -291,7 +291,7 @@ function App() {
       transferId: tid,
     });
     setShowTransferForm(false);
-    showToast('Transfer completed', () => {});
+    showToast('Transfer completed');
   }, [accounts, addTransaction, showToast]);
 
   const handleRefreshCryptoPrice = useCallback(async () => {
@@ -301,7 +301,7 @@ function App() {
     const usdPrice = await fetchCryptoPrice(account.ticker);
     setRefreshingPrice(false);
     if (usdPrice == null) {
-      showToast('Could not fetch price, try again later', () => {});
+      showToast('Could not fetch price, try again later');
       return;
     }
     // Convert USD price to account currency if needed
@@ -310,43 +310,42 @@ function App() {
       price = convertToBase(usdPrice, 'USD', account.currency, exchangeRates.rates);
     }
     await editAccount(account.id, { pricePerUnit: price });
-    showToast('Price updated', () => {});
+    showToast('Price updated');
   }, [selectedAccountId, accounts, editAccount, exchangeRates.rates, showToast]);
 
   const handleUpdatePrice = useCallback(async (price: number) => {
     if (!selectedAccountId) return;
     await editAccount(selectedAccountId, { pricePerUnit: price });
-    showToast('Price updated', () => {});
+    showToast('Price updated');
   }, [selectedAccountId, editAccount, showToast]);
 
   const handleSaveBudget = useCallback(async (data: Omit<Budget, 'id' | 'createdAt'>) => {
     if (editingBudget) {
       await editBudget(editingBudget.id, data);
-      showToast('Budget updated', () => {});
+      showToast('Budget updated');
     } else {
       await addBudget(data);
-      showToast('Budget created', () => {});
+      showToast('Budget created');
     }
     setShowCreateBudget(null);
     setEditingBudget(null);
   }, [editingBudget, editBudget, addBudget, showToast]);
 
-  const handleDeleteBudget = useCallback(async (id: string) => {
-    await removeBudget(id);
-    showToast('Budget deleted', () => {});
+  const handleDeleteBudget = useCallback((id: string) => {
+    showToast('Budget deleted', () => { void removeBudget(id); });
   }, [removeBudget, showToast]);
 
   // Goal handlers
   const handleSaveGoal = useCallback(async (data: Omit<Goal, 'id' | 'createdAt'>) => {
-    if (editingGoal) { await editGoal(editingGoal.id, data); showToast('Goal updated', () => {}); }
-    else { await addGoal(data); showToast('Goal created', () => {}); }
+    if (editingGoal) { await editGoal(editingGoal.id, data); showToast('Goal updated'); }
+    else { await addGoal(data); showToast('Goal created'); }
     setShowGoalForm(false); setEditingGoal(null);
   }, [editingGoal, editGoal, addGoal, showToast]);
 
   // Debt handlers
   const handleSaveDebt = useCallback(async (data: Omit<DebtEntry, 'id' | 'createdAt'>) => {
-    if (editingDebt) { await editDebt(editingDebt.id, data); showToast('Debt updated', () => {}); }
-    else { await addDebt(data); showToast('Debt added', () => {}); }
+    if (editingDebt) { await editDebt(editingDebt.id, data); showToast('Debt updated'); }
+    else { await addDebt(data); showToast('Debt added'); }
     setShowDebtForm(false); setEditingDebt(null);
   }, [editingDebt, editDebt, addDebt, showToast]);
 
@@ -354,13 +353,13 @@ function App() {
     const debt = debts.find((d) => d.id === id);
     if (!debt) return;
     await editDebt(id, { paidAmount: debt.paidAmount + amount });
-    showToast('Payment recorded', () => {});
+    showToast('Payment recorded');
   }, [debts, editDebt, showToast]);
 
   // Installment handlers
   const handleSaveInstallment = useCallback(async (data: Omit<Installment, 'id' | 'createdAt'>) => {
-    if (editingInstallment) { await editInstallment(editingInstallment.id, data); showToast('Installment updated', () => {}); }
-    else { await addInstallment(data); showToast('Installment added', () => {}); }
+    if (editingInstallment) { await editInstallment(editingInstallment.id, data); showToast('Installment updated'); }
+    else { await addInstallment(data); showToast('Installment added'); }
     setShowInstallmentForm(false); setEditingInstallment(null);
   }, [editingInstallment, editInstallment, addInstallment, showToast]);
 
@@ -368,7 +367,7 @@ function App() {
     const inst = installments.find((i) => i.id === id);
     if (!inst || inst.paidMonths >= inst.totalMonths) return;
     await editInstallment(id, { paidMonths: inst.paidMonths + 1 });
-    showToast('Month marked as paid', () => {});
+    showToast('Month marked as paid');
   }, [installments, editInstallment, showToast]);
 
   const formatAmount = useCallback((amount: number, currency: string) => {
@@ -379,19 +378,18 @@ function App() {
   const handleSaveEmployee = useCallback(async (data: Omit<Employee, 'id' | 'createdAt'>) => {
     if (editingEmployee) {
       await editEmployee(editingEmployee.id, data);
-      showToast('Employee updated', () => {});
+      showToast('Employee updated');
     } else {
       await addEmployee(data);
-      showToast('Employee added', () => {});
+      showToast('Employee added');
     }
     setShowEmployeeForm(false);
     setEditingEmployee(null);
   }, [editingEmployee, editEmployee, addEmployee, showToast]);
 
-  const handleDeleteEmployee = useCallback(async (id: string) => {
-    await removeEmployee(id);
+  const handleDeleteEmployee = useCallback((id: string) => {
     setSelectedEmployee(null);
-    showToast('Employee deleted', () => {});
+    showToast('Employee deleted', () => { void removeEmployee(id); });
   }, [removeEmployee, showToast]);
 
   const handleOnboardingComplete = useCallback(async (prefs: { displayName: string; defaultCurrency: string; theme: ThemePreference }) => {
@@ -494,7 +492,7 @@ function App() {
             onDelete={(id) => { void removeRule(id); }}
             onToggle={(id, enabled) => { void editRule(id, { enabled }); }}
             onApplyToPast={(updates) => { void handleApplyRulesToPast(updates); }}
-            onNotify={(msg) => showToast(msg, () => {})}
+            onNotify={(msg) => showToast(msg)}
             onBack={() => setShowRulesList(false)}
           />
         )}
@@ -584,7 +582,7 @@ function App() {
               accounts={accounts}
               onAdd={() => { setEditingGoal(null); setShowGoalForm(true); }}
               onEdit={(g) => { setEditingGoal(g); setShowGoalForm(true); }}
-              onDelete={async (id) => { await removeGoal(id); showToast('Goal deleted', () => {}); }}
+              onDelete={(id) => { showToast('Goal deleted', () => { void removeGoal(id); }); }}
               onBack={() => setShowGoalList(false)}
             />
           ) : showDebtList ? (
@@ -592,7 +590,7 @@ function App() {
               debts={debts}
               onAdd={() => { setEditingDebt(null); setShowDebtForm(true); }}
               onEdit={(d) => { setEditingDebt(d); setShowDebtForm(true); }}
-              onDelete={async (id) => { await removeDebt(id); showToast('Debt deleted', () => {}); }}
+              onDelete={(id) => { showToast('Debt deleted', () => { void removeDebt(id); }); }}
               onRecordPayment={handleRecordPayment}
               onBack={() => setShowDebtList(false)}
             />
@@ -602,7 +600,7 @@ function App() {
               accounts={accounts}
               onAdd={() => { setEditingInstallment(null); setShowInstallmentForm(true); }}
               onEdit={(i) => { setEditingInstallment(i); setShowInstallmentForm(true); }}
-              onDelete={async (id) => { await removeInstallment(id); showToast('Installment deleted', () => {}); }}
+              onDelete={(id) => { showToast('Installment deleted', () => { void removeInstallment(id); }); }}
               onMarkPaid={handleMarkInstallmentPaid}
               onBack={() => setShowInstallmentList(false)}
             />
