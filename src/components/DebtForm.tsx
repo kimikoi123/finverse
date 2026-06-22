@@ -37,20 +37,23 @@ export default function DebtForm({
   const parsedPaid = parseAmountInput(paidAmount);
   const canSave = personName.trim().length > 0 && parsedAmount > 0;
 
+  const isEditing = Boolean(editingDebt);
+
   const handleSave = () => {
     if (!canSave) return;
     onSave({
       direction,
       personName: personName.trim(),
       amount: parsedAmount,
-      paidAmount: parsedPaid,
+      // On edit, paid amount is managed via the payment timeline — preserve the
+      // existing value. On add, the entered amount seeds an initial payment.
+      paidAmount: isEditing ? (editingDebt?.paidAmount ?? 0) : parsedPaid,
       currency,
       dueDate: dueDate || undefined,
       notes: notes.trim() || undefined,
     });
   };
 
-  const isEditing = Boolean(editingDebt);
   const isIOwe = direction === 'i_owe';
   const headerTint = isIOwe
     ? 'bg-red-500/5 border-b border-red-500/10'
@@ -145,24 +148,27 @@ export default function DebtForm({
             )}
           </div>
 
-          {/* Amount paid */}
-          <div>
-            <label className="text-[10px] font-semibold uppercase tracking-widest text-text-secondary mb-2 block">
-              Amount Paid So Far
-            </label>
-            <input
-              type="text"
-              inputMode="decimal"
-              placeholder="0"
-              value={paidAmount}
-              onChange={(e) => setPaidAmount(e.target.value)}
-              aria-label="Amount paid so far"
-              className="w-full bg-surface border border-border rounded-xl py-3 px-4 text-sm text-text-primary placeholder:text-text-secondary/30 focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 transition-all"
-            />
-            {isKNotation(paidAmount) && (
-              <p className="text-[11px] text-primary/70 mt-1">= {parsedPaid.toLocaleString()}</p>
-            )}
-          </div>
+          {/* Amount paid — only on add. After creation, payments are recorded
+              and edited from the debt detail timeline. */}
+          {!isEditing && (
+            <div>
+              <label className="text-[10px] font-semibold uppercase tracking-widest text-text-secondary mb-2 block">
+                Amount Paid So Far
+              </label>
+              <input
+                type="text"
+                inputMode="decimal"
+                placeholder="0"
+                value={paidAmount}
+                onChange={(e) => setPaidAmount(e.target.value)}
+                aria-label="Amount paid so far"
+                className="w-full bg-surface border border-border rounded-xl py-3 px-4 text-sm text-text-primary placeholder:text-text-secondary/30 focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 transition-all"
+              />
+              {isKNotation(paidAmount) && (
+                <p className="text-[11px] text-primary/70 mt-1">= {parsedPaid.toLocaleString()}</p>
+              )}
+            </div>
+          )}
 
           {/* Currency selector */}
           <div>

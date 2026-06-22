@@ -7,6 +7,7 @@ export type SyncEntityType =
   | 'budget'
   | 'goal'
   | 'debt'
+  | 'debtPayment'
   | 'installment'
   | 'userPreferences'
   | 'receipt'
@@ -242,6 +243,22 @@ export interface DebtEntry {
   currency: string;
   dueDate?: string;
   notes?: string;
+  createdAt: string;
+  updatedAt?: number;
+  deletedAt?: number;
+}
+
+// A single payment recorded against a debt. Debts keep a running `paidAmount`,
+// but each payment is also logged here so history is preserved and individual
+// payments can be edited or removed. `paidAmount` on the debt is the sum of its
+// non-deleted payments.
+export interface DebtPayment {
+  id: string;
+  debtId: string;
+  amount: number;
+  date: string; // ISO date the payment was recorded
+  notes?: string;
+  editedAt?: string; // ISO datetime, set when an existing payment is edited
   createdAt: string;
   updatedAt?: number;
   deletedAt?: number;

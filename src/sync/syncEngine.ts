@@ -355,6 +355,8 @@ async function fetchRow(entityType: SyncEntityType, entityId: string): Promise<R
         return db.goals;
       case 'debt':
         return db.debts;
+      case 'debtPayment':
+        return db.debtPayments;
       case 'installment':
         return db.installments;
       case 'userPreferences':
@@ -422,6 +424,7 @@ async function enqueueAllLocalRows(): Promise<void> {
     ...toQueueEntries('budget', await db.budgets.toArray()),
     ...toQueueEntries('goal', await db.goals.toArray()),
     ...toQueueEntries('debt', await db.debts.toArray()),
+    ...toQueueEntries('debtPayment', await db.debtPayments.toArray()),
     ...toQueueEntries('installment', await db.installments.toArray()),
     ...toQueueEntries('userPreferences', await db.userPreferences.toArray()),
     ...toQueueEntries('employee', await db.employees.toArray()),

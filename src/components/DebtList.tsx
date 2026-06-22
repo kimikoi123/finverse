@@ -9,6 +9,7 @@ interface DebtListProps {
   debts: DebtEntry[];
   onAdd: () => void;
   onEdit: (debt: DebtEntry) => void;
+  onOpen: (debt: DebtEntry) => void;
   onDelete: (id: string) => void;
   onRecordPayment: (id: string, amount: number) => void;
   onBack: () => void;
@@ -36,11 +37,13 @@ function isOverdue(dueDate?: string): boolean {
 function DebtCard({
   debt,
   onEdit,
+  onOpen,
   onDelete,
   onRecordPayment,
 }: {
   debt: DebtEntry;
   onEdit: () => void;
+  onOpen: () => void;
   onDelete: () => void;
   onRecordPayment: (amount: number) => void;
 }) {
@@ -75,8 +78,14 @@ function DebtCard({
           {getInitials(debt.personName)}
         </div>
 
-        {/* Middle content */}
-        <div className="flex-1 min-w-0">
+        {/* Middle content — tap to open the debt detail / payment history */}
+        <div
+          className="flex-1 min-w-0 cursor-pointer"
+          role="button"
+          tabIndex={0}
+          onClick={onOpen}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(); } }}
+        >
           <p className="text-sm font-semibold text-text-primary truncate">
             {debt.personName}
           </p>
@@ -195,6 +204,7 @@ export default function DebtList({
   debts,
   onAdd,
   onEdit,
+  onOpen,
   onDelete,
   onRecordPayment,
   onBack,
@@ -258,6 +268,7 @@ export default function DebtList({
               key={debt.id}
               debt={debt}
               onEdit={() => onEdit(debt)}
+              onOpen={() => onOpen(debt)}
               onDelete={() => setPendingDelete(debt)}
               onRecordPayment={(amount) => onRecordPayment(debt.id, amount)}
             />
