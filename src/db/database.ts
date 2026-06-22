@@ -1,5 +1,5 @@
 import Dexie, { type Table } from 'dexie';
-import type { Trip, DeletedTrip, ExchangeRates, Transaction, UserPreferences, Account, Budget, Goal, DebtEntry, Installment, Employee, Advance, Rule, SyncEntityType } from '../types';
+import type { Trip, DeletedTrip, ExchangeRates, Transaction, UserPreferences, Account, Budget, Goal, DebtEntry, DebtPayment, Installment, Employee, Advance, Rule, SyncEntityType } from '../types';
 
 interface MetaRecord {
   key: string;
@@ -57,6 +57,7 @@ class SplitTripDB extends Dexie {
   budgets!: Table<Budget, string>;
   goals!: Table<Goal, string>;
   debts!: Table<DebtEntry, string>;
+  debtPayments!: Table<DebtPayment, string>;
   installments!: Table<Installment, string>;
   employees!: Table<Employee, string>;
   advances!: Table<Advance, string>;
@@ -261,6 +262,53 @@ class SplitTripDB extends Dexie {
       advances: 'id, employeeId, settled, updatedAt, deletedAt',
       rules: 'id, priority, enabled, updatedAt, deletedAt',
     });
+    // v14: log individual debt payments in their own table so partial payments
+    // have history and can be edited/removed. Existing debts with a non-zero
+    // paidAmount are seeded with one "Initial balance" payment so the invariant
+    // `debt.paidAmount === sum(payments)` holds for legacy data.
+    this.version(14).stores({
+      trips: 'id, updatedAt, deletedAt',
+      meta: 'key',
+      rateCache: 'key',
+      deletedTrips: 'id',
+      receiptPhotos: 'expenseId, updatedAt, deletedAt',
+      transactions: 'id, date, type, updatedAt, deletedAt',
+      userPreferences: 'id, updatedAt',
+      accounts: 'id, type, sortOrder, updatedAt, deletedAt',
+      budgets: 'id, type, updatedAt, deletedAt',
+      goals: 'id, updatedAt, deletedAt',
+      debts: 'id, direction, updatedAt, deletedAt',
+      debtPayments: 'id, debtId, updatedAt, deletedAt',
+      installments: 'id, updatedAt, deletedAt',
+      pendingPushes: 'id, enqueuedAt',
+      employees: 'id, updatedAt, deletedAt',
+      advances: 'id, employeeId, settled, updatedAt, deletedAt',
+      rules: 'id, priority, enabled, updatedAt, deletedAt',
+    }).upgrade(async (tx) => {
+      const now = Date.now();
+      const debts = await tx.table('debts').toArray() as DebtEntry[];
+      const seeds: DebtPayment[] = [];
+      for (const debt of debts) {
+        if (debt.deletedAt) continue;
+        if (debt.paidAmount > 0) {
+          seeds.push({
+            // Deterministic id so the same debt seeded independently on two
+            // synced devices collapses to one row under last-write-wins,
+            // instead of double-counting the initial balance.
+            id: `seed-${debt.id}`,
+            debtId: debt.id,
+            amount: debt.paidAmount,
+            date: debt.createdAt,
+            notes: 'Initial balance',
+            createdAt: new Date(now).toISOString(),
+            updatedAt: now,
+          });
+        }
+      }
+      if (seeds.length > 0) {
+        await tx.table('debtPayments').bulkPut(seeds);
+      }
+    });
   }
 }
 
@@ -268,4 +316,4 @@ class SplitTripDB extends Dexie {
 const db = new SplitTripDB();
 
 export { db };
-export type { MetaRecord, RateCacheRecord, ReceiptPhotoRecord, Transaction, UserPreferences, Employee, Advance };
+export type { MetaRecord, RateCacheRecord, ReceiptPhotoRecord, Transaction, UserPreferences, Employee, Advance, DebtPayment };

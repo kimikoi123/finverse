@@ -90,6 +90,8 @@ function tableFor(type: SyncEntityType): GenericTable | null {
       return db.goals as unknown as GenericTable;
     case 'debt':
       return db.debts as unknown as GenericTable;
+    case 'debtPayment':
+      return db.debtPayments as unknown as GenericTable;
     case 'employee':
       return db.employees as unknown as GenericTable;
     case 'advance':

@@ -1,7 +1,7 @@
 import { db } from './database';
 import { hasIdentity } from '../sync/deviceIdentity';
 import { fetchPrivateBlobAsObjectUrl } from '../sync/syncApi';
-import type { Trip, TripState, DeletedTrip, ExchangeRates, Transaction, UserPreferences, Account, Budget, Goal, DebtEntry, Installment, Employee, Advance, Rule, SyncEntityType } from '../types';
+import type { Trip, TripState, DeletedTrip, ExchangeRates, Transaction, UserPreferences, Account, Budget, Goal, DebtEntry, DebtPayment, Installment, Employee, Advance, Rule, SyncEntityType } from '../types';
 
 // Sync helpers: every write goes through these so `updatedAt` is always stamped
 // and deletes become tombstones instead of hard removals. The sync engine relies
@@ -376,6 +376,43 @@ export async function updateDebt(id: string, updates: Partial<DebtEntry>): Promi
 export async function deleteDebt(id: string): Promise<void> {
   await db.debts.update(id, tombstoneUpdate());
   await enqueuePush('debt', id);
+}
+
+// Debt payments. Each payment is its own logged row; the parent debt's
+// `paidAmount` is a cached aggregate kept in sync via `recomputeDebtPaid` so
+// existing readers (DebtList, PlannedPayments) need no changes.
+export async function loadDebtPayments(): Promise<DebtPayment[]> {
+  const all = await db.debtPayments.toArray();
+  return all.filter((p) => !p.deletedAt);
+}
+async function recomputeDebtPaid(debtId: string): Promise<void> {
+  const debt = await db.debts.get(debtId);
+  if (!debt || debt.deletedAt) return;
+  const payments = await db.debtPayments.where('debtId').equals(debtId).toArray();
+  const paidAmount = payments
+    .filter((p) => !p.deletedAt)
+    .reduce((sum, p) => sum + p.amount, 0);
+  if (paidAmount !== debt.paidAmount) {
+    await db.debts.update(debtId, stampUpdate({ paidAmount }));
+    await enqueuePush('debt', debtId);
+  }
+}
+export async function addDebtPayment(payment: DebtPayment): Promise<void> {
+  await db.debtPayments.put(stampWrite(payment));
+  await enqueuePush('debtPayment', payment.id);
+  await recomputeDebtPaid(payment.debtId);
+}
+export async function updateDebtPayment(id: string, updates: Partial<DebtPayment>): Promise<void> {
+  await db.debtPayments.update(id, stampUpdate(updates));
+  await enqueuePush('debtPayment', id);
+  const payment = await db.debtPayments.get(id);
+  if (payment) await recomputeDebtPaid(payment.debtId);
+}
+export async function deleteDebtPayment(id: string): Promise<void> {
+  const payment = await db.debtPayments.get(id);
+  await db.debtPayments.update(id, tombstoneUpdate());
+  await enqueuePush('debtPayment', id);
+  if (payment) await recomputeDebtPaid(payment.debtId);
 }
 
 // Installments

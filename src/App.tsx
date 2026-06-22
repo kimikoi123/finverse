@@ -37,6 +37,7 @@ import GoalList from './components/GoalList';
 import GoalForm from './components/GoalForm';
 import DebtList from './components/DebtList';
 import DebtForm from './components/DebtForm';
+import DebtDetail from './components/DebtDetail';
 import InstallmentList from './components/InstallmentList';
 import InstallmentForm from './components/InstallmentForm';
 import PayrollList from './components/PayrollList';
@@ -98,7 +99,10 @@ function App() {
     void runAutoConfirmOnce(addTransaction);
   }, [budgetsLoading, runAutoConfirmOnce, addTransaction]);
   const { goals, addGoal, editGoal, removeGoal } = useGoals();
-  const { debts, addDebt, editDebt, removeDebt } = useDebts();
+  const {
+    debts, addDebt, editDebt, removeDebt,
+    paymentsFor, addPayment, editPayment, removePayment,
+  } = useDebts();
   const { installments, addInstallment, editInstallment, removeInstallment } = useInstallments();
   const {
     employees, addEmployee, editEmployee, removeEmployee,
@@ -135,6 +139,7 @@ function App() {
   const [showDebtList, setShowDebtList] = useState(false);
   const [showDebtForm, setShowDebtForm] = useState(false);
   const [editingDebt, setEditingDebt] = useState<DebtEntry | null>(null);
+  const [selectedDebtId, setSelectedDebtId] = useState<string | null>(null);
   const [showInstallmentList, setShowInstallmentList] = useState(false);
   const [showInstallmentForm, setShowInstallmentForm] = useState(false);
   const [showCashflowForecast, setShowCashflowForecast] = useState(false);
@@ -344,17 +349,24 @@ function App() {
 
   // Debt handlers
   const handleSaveDebt = useCallback(async (data: Omit<DebtEntry, 'id' | 'createdAt'>) => {
-    if (editingDebt) { await editDebt(editingDebt.id, data); showToast('Debt updated'); }
-    else { await addDebt(data); showToast('Debt added'); }
+    if (editingDebt) {
+      await editDebt(editingDebt.id, data);
+      showToast('Debt updated');
+    } else {
+      // Create with zero paid; any "amount paid so far" becomes a seed payment
+      // so the payment log is the single source of truth for paidAmount.
+      const initialPaid = data.paidAmount;
+      const debt = await addDebt({ ...data, paidAmount: 0 });
+      if (initialPaid > 0) await addPayment(debt.id, initialPaid, 'Initial balance');
+      showToast('Debt added');
+    }
     setShowDebtForm(false); setEditingDebt(null);
-  }, [editingDebt, editDebt, addDebt, showToast]);
+  }, [editingDebt, editDebt, addDebt, addPayment, showToast]);
 
   const handleRecordPayment = useCallback(async (id: string, amount: number) => {
-    const debt = debts.find((d) => d.id === id);
-    if (!debt) return;
-    await editDebt(id, { paidAmount: debt.paidAmount + amount });
+    await addPayment(id, amount);
     showToast('Payment recorded');
-  }, [debts, editDebt, showToast]);
+  }, [addPayment, showToast]);
 
   // Installment handlers
   const handleSaveInstallment = useCallback(async (data: Omit<Installment, 'id' | 'createdAt'>) => {
@@ -585,11 +597,29 @@ function App() {
               onDelete={(id) => { showToast('Goal deleted', () => { void removeGoal(id); }); }}
               onBack={() => setShowGoalList(false)}
             />
+          ) : showDebtList && selectedDebtId ? (
+            (() => {
+              const selectedDebt = debts.find((d) => d.id === selectedDebtId);
+              if (!selectedDebt) { setSelectedDebtId(null); return null; }
+              return (
+                <DebtDetail
+                  debt={selectedDebt}
+                  payments={paymentsFor(selectedDebt.id)}
+                  onBack={() => setSelectedDebtId(null)}
+                  onEdit={() => { setEditingDebt(selectedDebt); setShowDebtForm(true); }}
+                  onDelete={() => { setSelectedDebtId(null); showToast('Debt deleted', () => { void removeDebt(selectedDebt.id); }); }}
+                  onAddPayment={addPayment}
+                  onEditPayment={editPayment}
+                  onRemovePayment={removePayment}
+                />
+              );
+            })()
           ) : showDebtList ? (
             <DebtList
               debts={debts}
               onAdd={() => { setEditingDebt(null); setShowDebtForm(true); }}
               onEdit={(d) => { setEditingDebt(d); setShowDebtForm(true); }}
+              onOpen={(d) => setSelectedDebtId(d.id)}
               onDelete={(id) => { showToast('Debt deleted', () => { void removeDebt(id); }); }}
               onRecordPayment={handleRecordPayment}
               onBack={() => setShowDebtList(false)}
@@ -680,7 +710,7 @@ function App() {
           onTabChange={(tab) => {
             setActiveTab(tab);
             if (tab !== 'wallet') setSelectedAccountId(null);
-            if (tab !== 'plan') { setActiveTrip(null); setShowCashflowForecast(false); setShowPlannedPayments(false); setShowBudgetList(false); setShowGoalList(false); setShowDebtList(false); setShowInstallmentList(false); setShowPayrollList(false); setSelectedEmployee(null); }
+            if (tab !== 'plan') { setActiveTrip(null); setShowCashflowForecast(false); setShowPlannedPayments(false); setShowBudgetList(false); setShowGoalList(false); setShowDebtList(false); setSelectedDebtId(null); setShowInstallmentList(false); setShowPayrollList(false); setSelectedEmployee(null); }
           }}
           onFabClick={() => setShowActionMenu(!showActionMenu)}
           fabOpen={showActionMenu}

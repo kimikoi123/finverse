@@ -24,6 +24,7 @@ const ALLOWED_TYPES = new Set([
   'budget',
   'goal',
   'debt',
+  'debtPayment',
   'installment',
   'userPreferences',
   'receipt',
