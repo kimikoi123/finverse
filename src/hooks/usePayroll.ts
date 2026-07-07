@@ -150,13 +150,11 @@ export function usePayroll() {
 
   const settlePayday = useCallback(async (employeeId: string) => {
     const now = new Date();
-    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    endOfMonth.setHours(23, 59, 59, 999);
     const pending = advances.filter(
       (a) =>
         a.employeeId === employeeId &&
         !a.settled &&
-        new Date(a.date) <= endOfMonth,
+        isInMonth(a.date, now.getFullYear(), now.getMonth()),
     );
     const ids = pending.map((a) => a.id);
     if (ids.length === 0) return;

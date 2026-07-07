@@ -107,7 +107,7 @@ function App() {
   const {
     employees, addEmployee, editEmployee, removeEmployee,
     addAdvance, removeAdvance, settlePayday,
-    totalPendingAdvances, advancesForEmployee,
+    currentMonthPendingAdvances, advancesForEmployee,
   } = usePayroll();
 
   // Start the cloud sync engine once on mount. The engine is idempotent
@@ -637,7 +637,7 @@ function App() {
           ) : showPayrollList && !selectedEmployee ? (
             <PayrollList
               employees={employees}
-              totalPendingAdvances={totalPendingAdvances}
+              currentMonthPendingAdvances={currentMonthPendingAdvances}
               onAdd={() => { setEditingEmployee(null); setShowEmployeeForm(true); }}
               onSelect={(emp) => setSelectedEmployee(emp)}
               onBack={() => setShowPayrollList(false)}

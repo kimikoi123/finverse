@@ -3,7 +3,7 @@ import type { Employee } from '../types';
 
 interface PayrollListProps {
   employees: Employee[];
-  totalPendingAdvances: (employeeId: string) => number;
+  currentMonthPendingAdvances: (employeeId: string) => number;
   onAdd: () => void;
   onSelect: (employee: Employee) => void;
   onBack: () => void;
@@ -16,7 +16,7 @@ function ordinalSuffix(n: number): string {
   return s[(v - 20) % 10] ?? s[v] ?? s[0]!;
 }
 
-export default function PayrollList({ employees, totalPendingAdvances, onAdd, onSelect, onBack, formatAmount }: PayrollListProps) {
+export default function PayrollList({ employees, currentMonthPendingAdvances, onAdd, onSelect, onBack, formatAmount }: PayrollListProps) {
   return (
     <div className="max-w-2xl mx-auto w-full p-4 sm:p-6 animate-fade-in">
       <div className="flex items-center gap-3 mb-4">
@@ -53,7 +53,7 @@ export default function PayrollList({ employees, totalPendingAdvances, onAdd, on
       ) : (
         <div className="flex flex-col gap-2">
           {employees.map((emp) => {
-            const pending = totalPendingAdvances(emp.id);
+            const pending = currentMonthPendingAdvances(emp.id);
             return (
               <button
                 key={emp.id}
