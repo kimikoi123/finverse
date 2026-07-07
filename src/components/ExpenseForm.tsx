@@ -216,7 +216,7 @@ export default function ExpenseForm({ members, baseCurrency, customCategories, o
           autoFocus
         />
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 min-w-0">
           <select
             value={currency}
             onChange={(e) => setCurrency(e.target.value)}
@@ -237,12 +237,12 @@ export default function ExpenseForm({ members, baseCurrency, customCategories, o
             onChange={(e) => setAmount(e.target.value)}
             onKeyDown={(e) => { if (e.key === '-') e.preventDefault(); }}
             aria-label="Expense amount"
-            className="flex-1 bg-surface-light/60 border border-border/60 rounded-xl px-4 py-3 text-sm text-text-primary placeholder:text-text-secondary/30 focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 focus:bg-surface-light transition-all"
+            className="flex-1 min-w-0 bg-surface-light/60 border border-border/60 rounded-xl px-4 py-3 text-sm text-text-primary placeholder:text-text-secondary/30 focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 focus:bg-surface-light transition-all"
           />
         </div>
 
         {addingCategory ? (
-          <div className="flex gap-1.5">
+          <div className="flex gap-1.5 min-w-0">
             <input
               type="text"
               placeholder="Category name"
@@ -250,7 +250,7 @@ export default function ExpenseForm({ members, baseCurrency, customCategories, o
               onChange={(e) => setNewCategoryName(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddCategory(); } if (e.key === 'Escape') setAddingCategory(false); }}
               aria-label="New category name"
-              className="flex-1 bg-surface-light/60 border border-border/60 rounded-xl px-4 py-3 text-sm text-text-primary placeholder:text-text-secondary/30 focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all"
+              className="flex-1 min-w-0 bg-surface-light/60 border border-border/60 rounded-xl px-4 py-3 text-sm text-text-primary placeholder:text-text-secondary/30 focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all"
               autoFocus
             />
             <button type="button" onClick={handleAddCategory} className="p-3 bg-primary hover:bg-primary-hover text-white rounded-xl transition-all" aria-label="Confirm new category">
@@ -376,7 +376,7 @@ export default function ExpenseForm({ members, baseCurrency, customCategories, o
               const m = members.find((mm) => mm.id === pid);
               if (!m) return null;
               return (
-                <div key={m.id} className="flex items-center gap-3">
+                <div key={m.id} className="flex items-center gap-3 min-w-0">
                   <span className="text-sm text-text-primary/80 w-24 truncate">{m.name}</span>
                   <input
                     type="number"
@@ -391,7 +391,7 @@ export default function ExpenseForm({ members, baseCurrency, customCategories, o
                       }))
                     }
                     aria-label={`Custom amount for ${m.name}`}
-                    className="flex-1 bg-surface-light/60 border border-border/60 rounded-xl px-4 py-2.5 text-sm text-text-primary placeholder:text-text-secondary/30 focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all"
+                    className="flex-1 min-w-0 bg-surface-light/60 border border-border/60 rounded-xl px-4 py-2.5 text-sm text-text-primary placeholder:text-text-secondary/30 focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all"
                   />
                 </div>
               );
@@ -428,7 +428,7 @@ export default function ExpenseForm({ members, baseCurrency, customCategories, o
                 .map((pid) => {
                   const memberName = members.find(m => m.id === pid)?.name ?? 'Unknown';
                   return (
-                    <div key={pid} className="flex items-center gap-3">
+                    <div key={pid} className="flex items-center gap-3 min-w-0">
                       <span className="text-sm text-text-primary/80 w-24 truncate">{memberName}</span>
                       <input
                         type="number"
@@ -443,7 +443,7 @@ export default function ExpenseForm({ members, baseCurrency, customCategories, o
                           }))
                         }
                         aria-label={`Advance payment by ${memberName}`}
-                        className="flex-1 bg-surface-light/60 border border-border/60 rounded-xl px-4 py-2.5 text-sm text-text-primary placeholder:text-text-secondary/30 focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all"
+                        className="flex-1 min-w-0 bg-surface-light/60 border border-border/60 rounded-xl px-4 py-2.5 text-sm text-text-primary placeholder:text-text-secondary/30 focus:outline-none focus:ring-1 focus:ring-primary/30 transition-all"
                       />
                     </div>
                   );
