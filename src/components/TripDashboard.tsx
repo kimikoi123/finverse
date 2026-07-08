@@ -225,7 +225,7 @@ export default function TripDashboard({
       {/* Tab Content */}
       {activeTab === 'expenses' && (
         <div id="tabpanel-expenses" role="tabpanel" aria-labelledby="tab-expenses" className="space-y-4 animate-fade-in">
-          {trip.members.length >= 2 && !showExpenseForm && (
+          {trip.members.length >= 1 && !showExpenseForm && (
             <button
               onClick={() => setShowExpenseForm(true)}
               className="w-full py-3.5 border border-dashed border-border/50 hover:border-primary/40 rounded-2xl text-sm text-text-secondary/50 hover:text-primary transition-all flex items-center justify-center gap-2"
@@ -235,10 +235,10 @@ export default function TripDashboard({
             </button>
           )}
 
-          {trip.members.length < 2 && (
+          {trip.members.length < 1 && (
             <div className="bg-accent/8 border border-accent/20 rounded-2xl p-4 text-center">
               <p className="text-sm text-accent/80">
-                Add at least 2 members before creating expenses
+                Add a member before creating expenses
               </p>
               <button
                 onClick={() => setActiveTab('members')}
