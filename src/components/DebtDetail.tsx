@@ -12,8 +12,8 @@ interface DebtDetailProps {
   onBack: () => void;
   onEdit: () => void;
   onDelete: () => void;
-  onAddPayment: (debtId: string, amount: number) => Promise<DebtPayment>;
-  onEditPayment: (id: string, updates: { amount: number }) => Promise<void>;
+  onAddPayment: (debtId: string, amount: number, notes?: string) => Promise<DebtPayment>;
+  onEditPayment: (id: string, updates: { amount?: number; notes?: string }) => Promise<void>;
   onRemovePayment: (id: string) => Promise<void>;
 }
 
@@ -29,8 +29,10 @@ export default function DebtDetail({
 }: DebtDetailProps) {
   const [showPaymentInput, setShowPaymentInput] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState('');
+  const [paymentNotes, setPaymentNotes] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editAmount, setEditAmount] = useState('');
+  const [editNotes, setEditNotes] = useState('');
   const [pendingDelete, setPendingDelete] = useState<DebtPayment | null>(null);
   const [showDeleteDebt, setShowDeleteDebt] = useState(false);
 
@@ -53,14 +55,28 @@ export default function DebtDetail({
 
   const handleAddPayment = async () => {
     if (!canAddPayment) return;
-    await onAddPayment(debt.id, cappedNew);
+    await onAddPayment(debt.id, cappedNew, paymentNotes);
     setPaymentAmount('');
+    setPaymentNotes('');
     setShowPaymentInput(false);
+  };
+
+  const cancelAddPayment = () => {
+    setShowPaymentInput(false);
+    setPaymentAmount('');
+    setPaymentNotes('');
   };
 
   const startEdit = (p: DebtPayment) => {
     setEditingId(p.id);
     setEditAmount(String(p.amount));
+    setEditNotes(p.notes ?? '');
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditAmount('');
+    setEditNotes('');
   };
 
   const handleSaveEdit = async (p: DebtPayment) => {
@@ -68,11 +84,15 @@ export default function DebtDetail({
     // Cap so paid never exceeds the total: remaining excludes this payment.
     const remainingWithout = debt.amount - (debt.paidAmount - p.amount);
     const capped = Math.min(parsed, remainingWithout);
-    if (capped > 0 && capped !== p.amount) {
-      await onEditPayment(p.id, { amount: capped });
+    const nextNotes = editNotes.trim() || undefined;
+    const updates: { amount?: number; notes?: string } = {};
+    if (capped > 0 && capped !== p.amount) updates.amount = capped;
+    // An emptied note is sent as undefined so the stored note is cleared.
+    if (nextNotes !== p.notes) updates.notes = nextNotes;
+    if (Object.keys(updates).length > 0) {
+      await onEditPayment(p.id, updates);
     }
-    setEditingId(null);
-    setEditAmount('');
+    cancelEdit();
   };
 
   return (
@@ -122,7 +142,16 @@ export default function DebtDetail({
               value={paymentAmount}
               onChange={(e) => setPaymentAmount(e.target.value)}
               autoFocus
-              className="w-full bg-bg border border-border rounded-xl py-3 px-4 text-sm text-text-primary placeholder:text-text-secondary/30 focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 transition-all mb-2"
+              className="w-full bg-bg border border-border rounded-xl py-3 px-4 text-sm text-text-primary placeholder:text-text-secondary/30 focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 transition-all mb-3"
+            />
+            <label className="text-[10px] font-semibold uppercase tracking-widest text-text-secondary mb-2 block">Note (Optional)</label>
+            <input
+              type="text"
+              placeholder="e.g. via GCash"
+              value={paymentNotes}
+              onChange={(e) => setPaymentNotes(e.target.value)}
+              aria-label="Payment note"
+              className="w-full bg-bg border border-border rounded-xl py-3 px-4 text-sm text-text-primary placeholder:text-text-secondary/30 focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 transition-all mb-3"
             />
             <div className="flex gap-2">
               <button
@@ -133,7 +162,7 @@ export default function DebtDetail({
                 Record Payment
               </button>
               <button
-                onClick={() => { setShowPaymentInput(false); setPaymentAmount(''); }}
+                onClick={cancelAddPayment}
                 className="px-4 py-2.5 rounded-xl text-sm font-semibold bg-surface-hover text-text-secondary hover:bg-border/50 transition-all"
               >
                 Cancel
@@ -160,41 +189,53 @@ export default function DebtDetail({
         ) : (
           <div className="border-l-2 border-border pl-3">
             {sortedPayments.map((p) => (
-              <div key={p.id} className="flex items-center justify-between text-sm mb-2.5">
+              <div key={p.id} className="flex items-center justify-between gap-2 text-sm mb-2.5">
                 {editingId === p.id ? (
-                  <div className="flex items-center gap-2 flex-1">
+                  <div className="flex-1 min-w-0 space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={editAmount}
+                        onChange={(e) => setEditAmount(e.target.value)}
+                        autoFocus
+                        aria-label="Edit payment amount"
+                        className="flex-1 min-w-0 bg-surface-light border border-border rounded-lg py-1.5 px-2.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 transition-all"
+                      />
+                      <button
+                        onClick={() => handleSaveEdit(p)}
+                        className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-success/10 text-text-secondary hover:text-success transition-colors"
+                        aria-label="Save payment"
+                      >
+                        <Check size={15} />
+                      </button>
+                      <button
+                        onClick={cancelEdit}
+                        className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-surface-light text-text-secondary transition-colors"
+                        aria-label="Cancel edit"
+                      >
+                        <X size={15} />
+                      </button>
+                    </div>
                     <input
                       type="text"
-                      inputMode="decimal"
-                      value={editAmount}
-                      onChange={(e) => setEditAmount(e.target.value)}
-                      autoFocus
-                      aria-label="Edit payment amount"
-                      className="flex-1 min-w-0 bg-surface-light border border-border rounded-lg py-1.5 px-2.5 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 transition-all"
+                      placeholder="Note (optional)"
+                      value={editNotes}
+                      onChange={(e) => setEditNotes(e.target.value)}
+                      aria-label="Edit payment note"
+                      className="w-full bg-surface-light border border-border rounded-lg py-1.5 px-2.5 text-sm text-text-primary placeholder:text-text-secondary/40 focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 transition-all"
                     />
-                    <button
-                      onClick={() => handleSaveEdit(p)}
-                      className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-success/10 text-text-secondary hover:text-success transition-colors"
-                      aria-label="Save payment"
-                    >
-                      <Check size={15} />
-                    </button>
-                    <button
-                      onClick={() => { setEditingId(null); setEditAmount(''); }}
-                      className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-surface-light text-text-secondary transition-colors"
-                      aria-label="Cancel edit"
-                    >
-                      <X size={15} />
-                    </button>
                   </div>
                 ) : (
                   <>
-                    <div className="text-text-secondary">
-                      {parseISODateLocal(p.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                      {' — '}
-                      <span className="font-medium text-text-primary">{formatCurrency(p.amount, debt.currency)}</span>
-                      {p.editedAt && <span className="ml-1.5 text-[11px] text-text-secondary/70">(edited)</span>}
-                      {p.notes && <span className="ml-1.5 text-[11px] text-text-secondary/70">· {p.notes}</span>}
+                    <div className="min-w-0 text-text-secondary">
+                      <div>
+                        {parseISODateLocal(p.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        {' — '}
+                        <span className="font-medium text-text-primary">{formatCurrency(p.amount, debt.currency)}</span>
+                        {p.editedAt && <span className="ml-1.5 text-[11px] text-text-secondary/70">(edited)</span>}
+                      </div>
+                      {p.notes && <div className="text-xs text-text-secondary/80 break-words">{p.notes}</div>}
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
                       <button
