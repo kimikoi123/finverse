@@ -11,7 +11,7 @@ interface DebtListProps {
   onEdit: (debt: DebtEntry) => void;
   onOpen: (debt: DebtEntry) => void;
   onDelete: (id: string) => void;
-  onRecordPayment: (id: string, amount: number) => void;
+  onRecordPayment: (id: string, amount: number, notes?: string) => void;
   onBack: () => void;
 }
 
@@ -45,10 +45,11 @@ function DebtCard({
   onEdit: () => void;
   onOpen: () => void;
   onDelete: () => void;
-  onRecordPayment: (amount: number) => void;
+  onRecordPayment: (amount: number, notes?: string) => void;
 }) {
   const [showPayment, setShowPayment] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState('');
+  const [paymentNotes, setPaymentNotes] = useState('');
 
   const remaining = debt.amount - debt.paidAmount;
   const progressPercent = debt.amount > 0 ? Math.min((debt.paidAmount / debt.amount) * 100, 100) : 0;
@@ -60,8 +61,9 @@ function DebtCard({
     // Never record more than what's still owed.
     const capped = Math.min(parsed, remaining);
     if (capped > 0) {
-      onRecordPayment(capped);
+      onRecordPayment(capped, paymentNotes);
       setPaymentAmount('');
+      setPaymentNotes('');
       setShowPayment(false);
     }
   };
@@ -166,7 +168,7 @@ function DebtCard({
 
       {/* Quick payment input */}
       {showPayment && (
-        <div className="mt-3 pt-3 border-t border-border flex items-center gap-2">
+        <div className="mt-3 pt-3 border-t border-border space-y-2">
           <input
             type="text"
             inputMode="decimal"
@@ -174,20 +176,30 @@ function DebtCard({
             value={paymentAmount}
             onChange={(e) => setPaymentAmount(e.target.value)}
             aria-label="Payment amount"
-            className="flex-1 bg-surface-light border border-border rounded-xl py-2 px-3 text-sm text-text-primary placeholder:text-text-secondary/30 focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 transition-all"
+            className="w-full bg-surface-light border border-border rounded-xl py-2 px-3 text-sm text-text-primary placeholder:text-text-secondary/30 focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 transition-all"
           />
-          <button
-            type="button"
-            onClick={handleSubmitPayment}
-            disabled={!(parseAmountInput(paymentAmount) > 0)}
-            className={`px-3 py-2 rounded-xl text-sm font-medium transition-all ${
-              parseAmountInput(paymentAmount) > 0
-                ? 'bg-primary text-white active:opacity-80'
-                : 'bg-primary/40 text-white/50 cursor-not-allowed'
-            }`}
-          >
-            Record
-          </button>
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              placeholder="Note (optional)"
+              value={paymentNotes}
+              onChange={(e) => setPaymentNotes(e.target.value)}
+              aria-label="Payment note"
+              className="flex-1 min-w-0 bg-surface-light border border-border rounded-xl py-2 px-3 text-sm text-text-primary placeholder:text-text-secondary/30 focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 transition-all"
+            />
+            <button
+              type="button"
+              onClick={handleSubmitPayment}
+              disabled={!(parseAmountInput(paymentAmount) > 0)}
+              className={`px-3 py-2 rounded-xl text-sm font-medium transition-all ${
+                parseAmountInput(paymentAmount) > 0
+                  ? 'bg-primary text-white active:opacity-80'
+                  : 'bg-primary/40 text-white/50 cursor-not-allowed'
+              }`}
+            >
+              Record
+            </button>
+          </div>
         </div>
       )}
     </div>
@@ -270,7 +282,7 @@ export default function DebtList({
               onEdit={() => onEdit(debt)}
               onOpen={() => onOpen(debt)}
               onDelete={() => setPendingDelete(debt)}
-              onRecordPayment={(amount) => onRecordPayment(debt.id, amount)}
+              onRecordPayment={(amount, notes) => onRecordPayment(debt.id, amount, notes)}
             />
           ))}
         </div>

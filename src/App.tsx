@@ -363,8 +363,8 @@ function App() {
     setShowDebtForm(false); setEditingDebt(null);
   }, [editingDebt, editDebt, addDebt, addPayment, showToast]);
 
-  const handleRecordPayment = useCallback(async (id: string, amount: number) => {
-    await addPayment(id, amount);
+  const handleRecordPayment = useCallback(async (id: string, amount: number, notes?: string) => {
+    await addPayment(id, amount, notes);
     showToast('Payment recorded');
   }, [addPayment, showToast]);
 
