@@ -85,7 +85,7 @@ export function usePayroll() {
   );
 
   const addAdvance = useCallback(
-    async (employeeId: string, amount: number): Promise<Advance[]> => {
+    async (employeeId: string, amount: number, notes?: string): Promise<Advance[]> => {
       const employee = employees.find((e) => e.id === employeeId);
       const now = new Date();
       const todayIso = isoDateFor(now.getFullYear(), now.getMonth(), now.getDate());
@@ -113,6 +113,7 @@ export function usePayroll() {
 
       const created: Advance[] = [];
       const createdAt = new Date().toISOString();
+      const trimmedNotes = notes?.trim() || undefined;
       if (currentPortion > 0) {
         created.push({
           id: crypto.randomUUID(),
@@ -120,6 +121,7 @@ export function usePayroll() {
           amount: currentPortion,
           date: todayIso,
           settled: false,
+          ...(trimmedNotes ? { notes: trimmedNotes } : {}),
           createdAt,
         });
       }
@@ -130,6 +132,7 @@ export function usePayroll() {
           amount: carryPortion,
           date: carryDateIso,
           settled: false,
+          ...(trimmedNotes ? { notes: trimmedNotes } : {}),
           createdAt,
         });
       }

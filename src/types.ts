@@ -300,6 +300,7 @@ export interface Advance {
   date: string; // ISO date when advance was given
   settled: boolean;
   settledAt?: string; // ISO date when deducted from paycheck
+  notes?: string;
   createdAt: string;
   updatedAt?: number;
   deletedAt?: number;

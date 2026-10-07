@@ -27,7 +27,10 @@ export function yesterdayISO(): string {
 // it as UTC midnight, which renders as the previous day in negative-UTC zones
 // and shifts month/day membership in PHT (UTC+8). Always use this for stored
 // calendar dates that should be interpreted in the user's local timezone.
+// Full timestamps (e.g. "2026-08-31T10:00:00.000Z", as stored for settledAt)
+// already carry a zone, so they're parsed natively and shown in local time.
 export function parseISODateLocal(iso: string): Date {
+  if (iso.includes('T')) return new Date(iso);
   const [y, m, d] = iso.split('-').map(Number);
   if (!y || !m || !d) return new Date(NaN);
   return new Date(y, m - 1, d);
