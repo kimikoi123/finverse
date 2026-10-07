@@ -11,7 +11,7 @@ interface EmployeeDetailProps {
   onBack: () => void;
   onEdit: () => void;
   onDelete: () => void;
-  onAddAdvance: (employeeId: string, amount: number) => Promise<Advance[]>;
+  onAddAdvance: (employeeId: string, amount: number, notes?: string) => Promise<Advance[]>;
   onRemoveAdvance: (id: string) => Promise<void>;
   onSettle: (employeeId: string) => Promise<void>;
   formatAmount: (amount: number, currency: string) => string;
@@ -87,6 +87,7 @@ export default function EmployeeDetail({
 }: EmployeeDetailProps) {
   const [showAdvanceInput, setShowAdvanceInput] = useState(false);
   const [advanceAmount, setAdvanceAmount] = useState('');
+  const [advanceNotes, setAdvanceNotes] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showSettleConfirm, setShowSettleConfirm] = useState(false);
 
@@ -123,9 +124,14 @@ export default function EmployeeDetail({
 
   const handleAddAdvance = async () => {
     if (!canAddAdvance) return;
-    await onAddAdvance(employee.id, parsedAdvance);
-    setAdvanceAmount('');
+    await onAddAdvance(employee.id, parsedAdvance, advanceNotes);
+    cancelAddAdvance();
+  };
+
+  const cancelAddAdvance = () => {
     setShowAdvanceInput(false);
+    setAdvanceAmount('');
+    setAdvanceNotes('');
   };
 
   const handleSettle = async () => {
@@ -167,6 +173,15 @@ export default function EmployeeDetail({
               value={advanceAmount}
               onChange={(e) => setAdvanceAmount(e.target.value)}
               autoFocus
+              className="w-full bg-bg border border-border rounded-xl py-3 px-4 text-sm text-text-primary placeholder:text-text-secondary/30 focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 transition-all mb-3"
+            />
+            <label className="text-[10px] font-semibold uppercase tracking-widest text-text-secondary mb-2 block">Note (Optional)</label>
+            <input
+              type="text"
+              placeholder="e.g. for groceries"
+              value={advanceNotes}
+              onChange={(e) => setAdvanceNotes(e.target.value)}
+              aria-label="Advance note"
               className="w-full bg-bg border border-border rounded-xl py-3 px-4 text-sm text-text-primary placeholder:text-text-secondary/30 focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary/40 transition-all mb-2"
             />
             {willCarryOver && (
@@ -192,7 +207,7 @@ export default function EmployeeDetail({
                 Record Advance
               </button>
               <button
-                onClick={() => { setShowAdvanceInput(false); setAdvanceAmount(''); }}
+                onClick={cancelAddAdvance}
                 className="px-4 py-2.5 rounded-xl text-sm font-semibold bg-surface-hover text-text-secondary hover:bg-border/50 transition-all"
               >
                 Cancel
@@ -228,11 +243,16 @@ export default function EmployeeDetail({
               <div className="text-xs text-text-secondary">No advances</div>
             ) : (
               group.advances.map((adv) => (
-                <div key={adv.id} className="flex items-center justify-between text-sm mb-1.5">
-                  <div className="text-text-secondary">
-                    {parseISODateLocal(adv.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                    {' — Advance '}
-                    <span className="font-medium text-text-primary">{formatAmount(adv.amount, employee.currency)}</span>
+                <div key={adv.id} className="flex items-center justify-between gap-2 text-sm mb-1.5">
+                  <div className="min-w-0 text-text-secondary">
+                    <div>
+                      {parseISODateLocal(adv.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      {' — Advance '}
+                      <span className="font-medium text-text-primary">{formatAmount(adv.amount, employee.currency)}</span>
+                    </div>
+                    {adv.notes && (
+                      <div className="text-xs text-text-secondary/80 break-words">{adv.notes}</div>
+                    )}
                   </div>
                   {!adv.settled && (
                     <button
