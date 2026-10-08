@@ -51,8 +51,13 @@ export async function requireAuth(req: VercelRequest): Promise<AuthContext> {
     throw new HttpError(401, 'Invalid credentials');
   }
 
-  // Touch last_seen_at — fire-and-forget, don't block the request on it.
-  void sql`UPDATE vault_devices SET last_seen_at = NOW() WHERE id = ${deviceId}`;
+  // Touch last_seen_at for the devices list, at most once a minute so routine
+  // syncs don't rewrite the row on every request. Must be awaited: Neon
+  // queries are lazy and never run if the promise is just dropped.
+  await sql`
+    UPDATE vault_devices SET last_seen_at = NOW()
+    WHERE id = ${deviceId} AND last_seen_at < NOW() - INTERVAL '1 minute'
+  `;
 
   return { vaultId, deviceId };
 }

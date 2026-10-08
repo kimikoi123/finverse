@@ -147,11 +147,11 @@ export interface PullResponse {
   entities: PulledEntity[];
   serverTime: number;
   hasMore: boolean;
-  nextSince: number;
+  nextCursor: number;
 }
 
-export function pullDelta(since: number, limit?: number): Promise<PullResponse> {
-  return request<PullResponse>('/api/sync/pull', { body: { since, limit } });
+export function pullDelta(cursor: number, limit?: number): Promise<PullResponse> {
+  return request<PullResponse>('/api/sync/pull', { body: { cursor, limit } });
 }
 
 export interface PushChange {

@@ -95,17 +95,22 @@ export function useBudgets(transactions: Transaction[]) {
   }, [budgets, transactions]);
 
   const runAutoConfirmOnce = useCallback(
-    async (addTransaction: (txn: Omit<Transaction, 'id' | 'createdAt'>) => Promise<Transaction>) => {
-      const plan = planAutoConfirm(budgets, new Date());
+    async (addTransactionIfAbsent: (txn: Omit<Transaction, 'createdAt'>) => Promise<boolean>) => {
+      // Plan from the stored budgets, not React state: this runs after the
+      // first sync pull, which may have just updated lastConfirmedMonth.
+      const plan = planAutoConfirm(await loadBudgets(), new Date());
       if (plan.length === 0) return;
       for (const action of plan) {
-        await addTransaction(action.transaction);
+        // Deterministic id + insert-if-absent: re-running a month (another
+        // device posted it, or the app closed before lastConfirmedMonth was
+        // saved) never creates a second copy of the bill.
+        await addTransactionIfAbsent({ ...action.transaction, id: action.transactionId });
         await dbUpdateBudget(action.budgetId, { lastConfirmedMonth: action.newLastConfirmedMonth });
       }
       // Refresh local budget state to pick up lastConfirmedMonth stamps
       await refresh();
     },
-    [budgets, refresh]
+    [refresh]
   );
 
   return { budgets: budgetsWithSpending, loading, addBudget, editBudget, removeBudget, runAutoConfirmOnce };
