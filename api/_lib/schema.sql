@@ -35,6 +35,20 @@ CREATE TABLE IF NOT EXISTS entities (
 CREATE INDEX IF NOT EXISTS entities_delta_idx
   ON entities(vault_id, updated_at);
 
+-- Pull cursor. Every write to `entities` takes a fresh value from this
+-- sequence and clients pull with `seq > cursor`. The older `updated_at > since`
+-- pull compared device-stamped times against a server-clock watermark, so a
+-- change made offline and uploaded later was older than other devices'
+-- watermarks and never reached them. Additive: apply before deploying the
+-- code that reads `seq`. Adding the column backfills existing rows.
+CREATE SEQUENCE IF NOT EXISTS entities_seq;
+
+ALTER TABLE entities
+  ADD COLUMN IF NOT EXISTS seq BIGINT NOT NULL DEFAULT nextval('entities_seq');
+
+CREATE INDEX IF NOT EXISTS entities_seq_idx
+  ON entities(vault_id, seq);
+
 CREATE TABLE IF NOT EXISTS pair_tokens (
   token TEXT PRIMARY KEY,
   vault_id UUID NOT NULL REFERENCES vaults(id) ON DELETE CASCADE,

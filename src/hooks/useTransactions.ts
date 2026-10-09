@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import type { Transaction } from '../types';
 import {
   addTransaction as dbAddTransaction,
+  addTransactionIfAbsent as dbAddTransactionIfAbsent,
   addTransactionsBulk as dbAddTransactionsBulk,
   getTransactions,
   deleteTransaction as dbDeleteTransaction,
@@ -22,15 +23,26 @@ export function useTransactions() {
   useEffect(() => { void refresh(); }, [refresh]);
   useRefreshOnRemote(refresh);
 
-  const addTransaction = useCallback(async (txn: Omit<Transaction, 'id' | 'createdAt'>) => {
+  // `id` is optional: pass one only when the record has a natural id (a
+  // confirmed bill); an existing row with that id is replaced.
+  const addTransaction = useCallback(async (txn: Omit<Transaction, 'id' | 'createdAt'> & { id?: string }) => {
     const newTxn: Transaction = {
       ...txn,
-      id: crypto.randomUUID(),
+      id: txn.id ?? crypto.randomUUID(),
       createdAt: new Date().toISOString(),
     };
     await dbAddTransaction(newTxn);
-    setTransactions((prev) => [newTxn, ...prev]);
+    setTransactions((prev) => [newTxn, ...prev.filter((t) => t.id !== newTxn.id)]);
     return newTxn;
+  }, []);
+
+  // Inserts an app-generated row (auto-posted bill) unless one with the same
+  // id already exists. See addTransactionIfAbsent in storage.ts.
+  const addTransactionIfAbsent = useCallback(async (txn: Omit<Transaction, 'createdAt'>) => {
+    const newTxn: Transaction = { ...txn, createdAt: new Date().toISOString() };
+    const added = await dbAddTransactionIfAbsent(newTxn);
+    if (added) setTransactions((prev) => [newTxn, ...prev]);
+    return added;
   }, []);
 
   const addTransactions = useCallback(async (txns: Omit<Transaction, 'id' | 'createdAt'>[]) => {
@@ -58,5 +70,5 @@ export function useTransactions() {
     );
   }, []);
 
-  return { transactions, loading, addTransaction, addTransactions, removeTransaction, editTransaction };
+  return { transactions, loading, addTransaction, addTransactionIfAbsent, addTransactions, removeTransaction, editTransaction };
 }

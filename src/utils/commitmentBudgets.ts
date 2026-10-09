@@ -59,9 +59,17 @@ export function deriveCommitmentState(budget: Budget, today: Date): CommitmentSt
   return { isPendingThisMonth, nextDueDate };
 }
 
+// One bill per commitment per month, so its transaction id is derived from
+// the pair instead of being random. Two synced devices that both post
+// October's bill then write the same row rather than two copies.
+export function commitmentTransactionId(budgetId: string, month: string): string {
+  return `bill-${budgetId}-${month}`;
+}
+
 export interface AutoConfirmAction {
   budgetId: string;
   newLastConfirmedMonth: string;
+  transactionId: string;
   transaction: Omit<Transaction, 'id' | 'createdAt'>;
 }
 
@@ -99,6 +107,7 @@ export function planAutoConfirm(budgets: Budget[], today: Date): AutoConfirmActi
       actions.push({
         budgetId: b.id,
         newLastConfirmedMonth: iterKey,
+        transactionId: commitmentTransactionId(b.id, iterKey),
         transaction: {
           type: 'expense',
           amount: b.monthlyLimit,

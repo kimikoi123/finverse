@@ -55,7 +55,8 @@ import { useGoals } from './hooks/useGoals';
 import { useDebts } from './hooks/useDebts';
 import { useInstallments } from './hooks/useInstallments';
 import { usePayroll } from './hooks/usePayroll';
-import { start as startSyncEngine, stop as stopSyncEngine } from './sync/syncEngine';
+import { start as startSyncEngine, stop as stopSyncEngine, whenInitialSyncSettled } from './sync/syncEngine';
+import { commitmentTransactionId } from './utils/commitmentBudgets';
 import type { Trip, Account, Budget, Goal, DebtEntry, Installment, Employee, Rule, ThemePreference, Transaction } from './types';
 
 function App() {
@@ -86,18 +87,22 @@ function App() {
   const { toasts, showToast, undoToast, dismissToast, duration } = useToast();
   const { theme, setTheme } = useTheme();
   const { privacyMode, togglePrivacyMode } = usePrivacyMode();
-  const { transactions, addTransaction, addTransactions, editTransaction, removeTransaction } = useTransactions();
+  const { transactions, addTransaction, addTransactionIfAbsent, addTransactions, editTransaction, removeTransaction } = useTransactions();
   const { preferences, loading: prefsLoading, updatePreferences } = useUserPreferences();
   const { accounts, netWorth, addAccount, editAccount, removeAccount, reorderAccounts } = useAccounts();
-  const { budgets: budgetsWithSpending, loading: budgetsLoading, addBudget, editBudget, removeBudget, runAutoConfirmOnce } = useBudgets(transactions);
+  const { budgets: budgetsWithSpending, addBudget, editBudget, removeBudget, runAutoConfirmOnce } = useBudgets(transactions);
 
+  // Auto-post due fixed bills once per launch, after the first sync pull so
+  // a device that was offline sees bills another device already posted.
   const hasRunAutoConfirm = useRef(false);
   useEffect(() => {
     if (hasRunAutoConfirm.current) return;
-    if (budgetsLoading) return;  // budgets still loading
     hasRunAutoConfirm.current = true;
-    void runAutoConfirmOnce(addTransaction);
-  }, [budgetsLoading, runAutoConfirmOnce, addTransaction]);
+    void (async () => {
+      await whenInitialSyncSettled();
+      await runAutoConfirmOnce(addTransactionIfAbsent);
+    })();
+  }, [runAutoConfirmOnce, addTransactionIfAbsent]);
   const { goals, addGoal, editGoal, removeGoal } = useGoals();
   const {
     debts, addDebt, editDebt, removeDebt,
@@ -780,7 +785,9 @@ function App() {
             setPendingConfirmBill(remaining[0] ?? null);
           }}
           onConfirm={async (txn, newLastConfirmedMonth) => {
-            await addTransaction(txn);
+            // Same id as the auto-posted bill for this month, so confirming on
+            // two devices updates one transaction instead of adding two.
+            await addTransaction({ ...txn, id: commitmentTransactionId(pendingConfirmBill.id, newLastConfirmedMonth) });
             await editBudget(pendingConfirmBill.id, { lastConfirmedMonth: newLastConfirmedMonth });
             const remaining = budgetsWithSpending.filter(
               (b) => b.isPendingThisMonth && b.id !== pendingConfirmBill.id

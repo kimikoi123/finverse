@@ -72,15 +72,23 @@ export async function loadState(): Promise<TripState> {
   return { trips, activeTripId: meta?.value ?? null };
 }
 
-export async function saveState(state: TripState): Promise<void> {
+// A trip write names exactly the trips it changed. Trips are synced as whole
+// rows under last-write-wins, so stamping a trip this device didn't touch
+// would let its (possibly stale) copy overwrite another device's edits, and
+// deleting "every stored trip missing from memory" would delete trips another
+// device created that this device hasn't loaded yet.
+export interface TripChanges {
+  put?: readonly Trip[]; // created, edited or restored trips (clears deletedAt)
+  remove?: readonly string[]; // trips to soft-delete
+  activeTripId?: string | null; // omit to leave the stored active trip unchanged
+}
+
+export async function saveTripChanges(changes: TripChanges): Promise<void> {
   const now = Date.now();
   const changedIds: string[] = [];
   const syncEnabled = hasIdentity();
   await db.transaction('rw', db.trips, db.meta, db.pendingPushes, async () => {
-    const existing = await db.trips.toArray();
-    const newIds = new Set(state.trips.map((t) => t.id));
-    const toSoftDelete = existing.filter((t) => !newIds.has(t.id) && !t.deletedAt);
-    const toPut: Trip[] = state.trips.map((t) => {
+    const toPut: Trip[] = (changes.put ?? []).map((t) => {
       const copy: Trip = { ...t, updatedAt: now };
       if ('deletedAt' in copy) delete copy.deletedAt;
       return copy;
@@ -89,11 +97,15 @@ export async function saveState(state: TripState): Promise<void> {
       await db.trips.bulkPut(toPut);
       for (const t of toPut) changedIds.push(t.id);
     }
-    for (const trip of toSoftDelete) {
-      await db.trips.update(trip.id, { deletedAt: now, updatedAt: now });
-      changedIds.push(trip.id);
+    for (const id of changes.remove ?? []) {
+      const existing = await db.trips.get(id);
+      if (!existing || existing.deletedAt) continue;
+      await db.trips.update(id, { deletedAt: now, updatedAt: now });
+      changedIds.push(id);
     }
-    await db.meta.put({ key: 'activeTripId', value: state.activeTripId });
+    if (changes.activeTripId !== undefined) {
+      await db.meta.put({ key: 'activeTripId', value: changes.activeTripId });
+    }
     if (syncEnabled && changedIds.length > 0) {
       await db.pendingPushes.bulkPut(
         changedIds.map((id) => ({
@@ -234,6 +246,22 @@ export async function saveUserPreferences(prefs: UserPreferences): Promise<void>
 export async function addTransaction(txn: Transaction): Promise<void> {
   await db.transactions.put(stampWrite(txn));
   await enqueuePush('transaction', txn.id);
+}
+
+// For rows the app generates on its own (auto-posted bills) under an id that
+// every device derives the same way. Skips the write if the row already
+// exists here — even as a tombstone, so a bill the user deleted isn't
+// recreated. The row is stamped updatedAt = 0 so that under last-write-wins
+// any copy another device already uploaded wins: our push is rejected as
+// stale and theirs is pulled down, instead of ours overwriting their edits.
+export async function addTransactionIfAbsent(txn: Transaction): Promise<boolean> {
+  const added = await db.transaction('rw', db.transactions, async () => {
+    if (await db.transactions.get(txn.id)) return false;
+    await db.transactions.add({ ...txn, updatedAt: 0 });
+    return true;
+  });
+  if (added) await enqueuePush('transaction', txn.id);
+  return added;
 }
 
 // Bulk insert: stamps each row, writes them in a single Dexie transaction,

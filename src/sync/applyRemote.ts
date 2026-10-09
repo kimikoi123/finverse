@@ -70,10 +70,34 @@ export async function applyRemoteEntity(entity: PulledEntity): Promise<void> {
   await table.put(row);
 }
 
+// One transaction per pulled page: a full re-pull is thousands of rows, and a
+// transaction per row is slow on phones. The page also lands all-or-nothing,
+// which matches the cursor only advancing after the whole page is applied.
 export async function applyRemoteBatch(entities: PulledEntity[]): Promise<void> {
-  for (const entity of entities) {
-    await applyRemoteEntity(entity);
-  }
+  await db.transaction('rw', syncedTables(), async () => {
+    for (const entity of entities) {
+      await applyRemoteEntity(entity);
+    }
+  });
+}
+
+// Every table `tableFor` can return — the scope of applyRemoteBatch's transaction.
+function syncedTables() {
+  return [
+    db.trips,
+    db.transactions,
+    db.accounts,
+    db.budgets,
+    db.goals,
+    db.debts,
+    db.debtPayments,
+    db.employees,
+    db.advances,
+    db.installments,
+    db.userPreferences,
+    db.rules,
+    db.receiptPhotos,
+  ];
 }
 
 function tableFor(type: SyncEntityType): GenericTable | null {

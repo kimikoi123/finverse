@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { clampDueDay, resolveDueDate, monthKey, deriveCommitmentState, planAutoConfirm } from './commitmentBudgets';
+import { clampDueDay, resolveDueDate, monthKey, deriveCommitmentState, planAutoConfirm, commitmentTransactionId } from './commitmentBudgets';
 import type { Budget } from '../types';
 
 describe('clampDueDay', () => {
@@ -196,6 +196,15 @@ describe('planAutoConfirm', () => {
     const b = makeCommitment({ varies: false, dueDay: 15 });
     const plan = planAutoConfirm([b], new Date(2026, 3, 20));
     expect(plan[0]!.transaction.category).toBe('bills');
+  });
+
+  it('gives each bill an id derived from budget and month, so two devices post the same row', () => {
+    const b = makeCommitment({ id: 'b1', varies: false, dueDay: 15, lastConfirmedMonth: '2026-02' });
+    const phone = planAutoConfirm([b], new Date(2026, 3, 20));
+    const laptop = planAutoConfirm([b], new Date(2026, 3, 21));
+    expect(phone.map((a) => a.transactionId)).toEqual(['bill-b1-2026-03', 'bill-b1-2026-04']);
+    expect(laptop.map((a) => a.transactionId)).toEqual(phone.map((a) => a.transactionId));
+    expect(commitmentTransactionId('b1', '2026-04')).toBe('bill-b1-2026-04');
   });
 });
 

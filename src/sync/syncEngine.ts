@@ -1,4 +1,4 @@
-import { db } from '../db/database';
+import { db, type PendingPushRecord } from '../db/database';
 import { subscribeMutations } from '../db/storage';
 import type { SyncEntityType } from '../types';
 import { REMOTE_APPLIED_EVENT } from '../hooks/useRefreshOnRemote';
@@ -6,10 +6,10 @@ import { applyRemoteBatch } from './applyRemote';
 import { drainReceiptUploads } from './receiptUploader';
 import {
   clearIdentity,
-  getLastPulledAt,
+  getPullCursor,
   hasIdentity,
   setIdentity,
-  setLastPulledAt,
+  setPullCursor,
   type DeviceIdentity,
 } from './deviceIdentity';
 import {
@@ -39,11 +39,32 @@ let periodicHandle: ReturnType<typeof setInterval> | null = null;
 let unsubscribeMutations: (() => void) | null = null;
 let started = false;
 
+// Settles once the first full (pull + push) sync attempt has finished —
+// successfully or not — or immediately when there's nothing to sync with.
+let settleInitialSync: () => void = () => {};
+const initialSyncSettled = new Promise<void>((resolve) => {
+  settleInitialSync = resolve;
+});
+
+// Public: lets launch-time automation (auto-posting due bills) wait until
+// rows other devices already uploaded have been pulled, instead of acting on
+// a stale local copy. Gives up after `timeoutMs` so a slow or hung network
+// only delays that work.
+export function whenInitialSyncSettled(timeoutMs = 30_000): Promise<void> {
+  return new Promise<void>((resolve) => {
+    const timer = setTimeout(resolve, timeoutMs);
+    void initialSyncSettled.then(() => {
+      clearTimeout(timer);
+      resolve();
+    });
+  });
+}
+
 // One-time-per-device sync repairs. Each `if (at < N)` block runs once
 // when the device's stored marker is below N. Bump SYNC_REPAIR_TARGET
 // monotonically; never reuse a version number.
 const SYNC_REPAIR_KEY = 'finverse.syncRepairVersion';
-const SYNC_REPAIR_TARGET = 1;
+const SYNC_REPAIR_TARGET = 2;
 
 async function runSyncRepairs(): Promise<void> {
   const raw = localStorage.getItem(SYNC_REPAIR_KEY);
@@ -61,7 +82,20 @@ async function runSyncRepairs(): Promise<void> {
   // reach the server (LWW rejects stale writes cleanly).
   if (at < 1) {
     if (hasIdentity()) {
-      setLastPulledAt(0);
+      setPullCursor(0);
+      await enqueueAllLocalRows();
+    }
+  }
+
+  // v2: pull moved from the `updated_at > since` watermark to the server's
+  // `seq` cursor. The watermark skipped rows that another device edited
+  // offline and uploaded later, and an edit made while a push was in flight
+  // could drop out of the queue. Same repair as v1: start the cursor at zero
+  // (re-pulls everything; LWW keeps newer local rows) and re-enqueue every
+  // local row so edits the old push path dropped reach the server.
+  if (at < 2) {
+    if (hasIdentity()) {
+      setPullCursor(0);
       await enqueueAllLocalRows();
     }
   }
@@ -83,6 +117,8 @@ export function start(): void {
     }
     if (hasIdentity()) {
       void sync();
+    } else {
+      settleInitialSync();
     }
   })();
 }
@@ -124,7 +160,7 @@ export async function bootstrapNewVault(label?: string): Promise<void> {
     deviceKey: response.deviceKey,
   };
   setIdentity(identity);
-  setLastPulledAt(0);
+  setPullCursor(0);
   await enqueueAllLocalRows();
   await refreshStateFromIdentity();
   await sync();
@@ -139,7 +175,7 @@ export async function joinVaultWithToken(token: string, label?: string): Promise
     deviceId: response.deviceId,
     deviceKey: response.deviceKey,
   });
-  setLastPulledAt(0);
+  setPullCursor(0);
   await refreshStateFromIdentity();
   await sync();
 }
@@ -202,10 +238,12 @@ function onUnauthed(): void {
 async function sync(options: { pushOnly?: boolean } = {}): Promise<void> {
   if (!hasIdentity()) {
     state.update({ status: 'no-identity' });
+    settleInitialSync();
     return;
   }
   if (!navigator.onLine) {
     state.update({ status: 'offline' });
+    settleInitialSync();
     return;
   }
   if (syncInFlight) {
@@ -239,6 +277,7 @@ async function sync(options: { pushOnly?: boolean } = {}): Promise<void> {
     }
   } finally {
     syncInFlight = false;
+    if (!options.pushOnly) settleInitialSync();
     if (nextSyncQueued) {
       nextSyncQueued = false;
       void sync();
@@ -247,16 +286,19 @@ async function sync(options: { pushOnly?: boolean } = {}): Promise<void> {
 }
 
 async function runPull(): Promise<void> {
-  let since = getLastPulledAt();
+  let cursor = getPullCursor();
   let appliedAny = false;
   for (let safety = 0; safety < 20; safety++) {
-    const page = await pullDelta(since);
+    const page = await pullDelta(cursor);
+    if (!Number.isSafeInteger(page.nextCursor) || page.nextCursor < cursor) {
+      throw new Error('Sync server returned an invalid pull cursor');
+    }
     if (page.entities.length > 0) {
       await applyRemoteBatch(page.entities);
       appliedAny = true;
     }
-    since = page.nextSince;
-    setLastPulledAt(since);
+    cursor = page.nextCursor;
+    setPullCursor(cursor);
     if (!page.hasMore) break;
   }
   // Tell data hooks (useTransactions, useAccounts, useUserPreferences, …)
@@ -276,7 +318,7 @@ async function runPush(): Promise<void> {
   for (let i = 0; i < queue.length; i += PUSH_BATCH_SIZE) {
     const slice = queue.slice(i, i + PUSH_BATCH_SIZE);
     const changes: PushChange[] = [];
-    const rowLookup = new Map<string, string>(); // entityId → queueKey
+    const rowLookup = new Map<string, PendingPushRecord>(); // entityId → queue entry
     for (const q of slice) {
       const row = await fetchRow(q.entityType, q.entityId);
       if (!row || typeof row.updatedAt !== 'number') continue;
@@ -288,11 +330,11 @@ async function runPush(): Promise<void> {
         updatedAt: row.updatedAt,
         deletedAt: typeof row.deletedAt === 'number' ? row.deletedAt : undefined,
       });
-      rowLookup.set(q.entityId, q.id);
+      rowLookup.set(q.entityId, q);
     }
 
     if (changes.length === 0) {
-      await db.pendingPushes.bulkDelete(slice.map((q) => q.id));
+      await dequeueUnlessRequeued(slice);
       continue;
     }
 
@@ -304,22 +346,18 @@ async function runPush(): Promise<void> {
         // Client-side error (413 batch too large, 400 validation). Drop
         // the batch from the queue to avoid infinite retries, but log it.
         console.error('Push rejected with client error, dropping batch:', err);
-        await db.pendingPushes.bulkDelete(slice.map((q) => q.id));
+        await dequeueUnlessRequeued(slice);
         continue;
       }
       throw err;
     }
 
     const rejectedIds = new Set(response.rejected.map((r) => r.entityId));
-    const toDelete: string[] = [];
-    for (const [entityId, queueKey] of rowLookup.entries()) {
-      if (!rejectedIds.has(entityId)) {
-        toDelete.push(queueKey);
-      }
+    const pushed: PendingPushRecord[] = [];
+    for (const [entityId, entry] of rowLookup.entries()) {
+      if (!rejectedIds.has(entityId)) pushed.push(entry);
     }
-    if (toDelete.length > 0) {
-      await db.pendingPushes.bulkDelete(toDelete);
-    }
+    await dequeueUnlessRequeued(pushed);
 
     // Stale-write rejections mean the server has a newer copy. Pulling
     // will bring it down and reconcile; skipping re-push of these rows
@@ -329,15 +367,28 @@ async function runPush(): Promise<void> {
       // Re-enqueue? No — the newer server row now has a higher updatedAt
       // than what was in our queue snapshot, so we'd just reject again.
       // Drop the stale-rejected entries too.
-      const rejectedKeys: string[] = [];
-      for (const [entityId, queueKey] of rowLookup.entries()) {
-        if (rejectedIds.has(entityId)) rejectedKeys.push(queueKey);
+      const rejected: PendingPushRecord[] = [];
+      for (const [entityId, entry] of rowLookup.entries()) {
+        if (rejectedIds.has(entityId)) rejected.push(entry);
       }
-      if (rejectedKeys.length > 0) {
-        await db.pendingPushes.bulkDelete(rejectedKeys);
-      }
+      await dequeueUnlessRequeued(rejected);
     }
   }
+}
+
+// Removes handled entries from the push queue — except any that were
+// re-enqueued (the row was edited again) after `runPush` took its snapshot,
+// e.g. while the request was in flight. Those carry a newer `enqueuedAt` and
+// must stay queued, or the newer edit would never be uploaded.
+async function dequeueUnlessRequeued(entries: PendingPushRecord[]): Promise<void> {
+  if (entries.length === 0) return;
+  await db.transaction('rw', db.pendingPushes, async () => {
+    const current = await db.pendingPushes.bulkGet(entries.map((e) => e.id));
+    const unchanged = entries.filter((e, i) => current[i]?.enqueuedAt === e.enqueuedAt);
+    if (unchanged.length > 0) {
+      await db.pendingPushes.bulkDelete(unchanged.map((e) => e.id));
+    }
+  });
 }
 
 async function fetchRow(entityType: SyncEntityType, entityId: string): Promise<Record<string, unknown> | undefined> {

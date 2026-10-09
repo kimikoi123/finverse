@@ -1,7 +1,8 @@
 import { useState, useCallback, useEffect } from 'react';
 import { generateId } from '../utils/helpers';
 import type { Trip, TripState, DeletedTrip, Member, Expense } from '../types';
-import { loadState, saveState, loadDeletedTrips, addDeletedTrip, removeDeletedTrip, clearAllDeletedTrips } from '../db/storage';
+import { loadState, saveTripChanges, loadDeletedTrips, addDeletedTrip, removeDeletedTrip, clearAllDeletedTrips } from '../db/storage';
+import type { TripChanges } from '../db/storage';
 import { migrateFromLocalStorage } from '../db/migrate';
 import { useRefreshOnRemote } from './useRefreshOnRemote';
 
@@ -47,9 +48,11 @@ export function useTrip() {
 
   useRefreshOnRemote(refresh);
 
-  const persist = useCallback((newState: TripState) => {
+  // Applies an in-memory state change and persists only what the operation
+  // touched — see TripChanges in storage.ts for why that matters for sync.
+  const commit = useCallback((newState: TripState, changes: TripChanges) => {
     setState(newState);
-    saveState(newState).catch((err: unknown) => {
+    saveTripChanges(changes).catch((err: unknown) => {
       console.error('Failed to persist state to IndexedDB:', err);
     });
   }, []);
@@ -69,17 +72,15 @@ export function useTrip() {
       trips: [...state.trips, trip],
       activeTripId: trip.id,
     };
-    persist(newState);
+    commit(newState, { put: [trip], activeTripId: trip.id });
     return trip;
-  }, [state, persist]);
+  }, [state, commit]);
 
   const deleteTrip = useCallback((tripId: string) => {
     const trip = state.trips.find((t) => t.id === tripId);
     const newTrips = state.trips.filter((t) => t.id !== tripId);
-    persist({
-      trips: newTrips,
-      activeTripId: state.activeTripId === tripId ? null : state.activeTripId,
-    });
+    const activeTripId = state.activeTripId === tripId ? null : state.activeTripId;
+    commit({ trips: newTrips, activeTripId }, { remove: [tripId], activeTripId });
     if (trip) {
       const deletedAt = new Date().toISOString();
       setDeletedTrips((prev) => [...prev, { trip, deletedAt }]);
@@ -87,7 +88,7 @@ export function useTrip() {
         console.error('Failed to save deleted trip:', err);
       });
     }
-  }, [state, persist]);
+  }, [state, commit]);
 
   const restoreTrip = useCallback((tripId: string) => {
     const entry = deletedTrips.find((d) => d.trip.id === tripId);
@@ -96,11 +97,11 @@ export function useTrip() {
     removeDeletedTrip(tripId).catch((err: unknown) => {
       console.error('Failed to remove from deleted trips:', err);
     });
-    persist({
-      trips: [...state.trips, entry.trip],
-      activeTripId: state.activeTripId,
-    });
-  }, [deletedTrips, state, persist]);
+    commit(
+      { trips: [...state.trips, entry.trip], activeTripId: state.activeTripId },
+      { put: [entry.trip] },
+    );
+  }, [deletedTrips, state, commit]);
 
   const permanentlyDeleteTrip = useCallback((tripId: string) => {
     setDeletedTrips((prev) => prev.filter((d) => d.trip.id !== tripId));
@@ -117,15 +118,16 @@ export function useTrip() {
   }, []);
 
   const setActiveTrip = useCallback((tripId: string | null) => {
-    persist({ ...state, activeTripId: tripId });
-  }, [state, persist]);
+    commit({ ...state, activeTripId: tripId }, { activeTripId: tripId });
+  }, [state, commit]);
 
   const updateTrip = useCallback((tripId: string, updates: Partial<Trip>) => {
-    const newTrips = state.trips.map((t) =>
-      t.id === tripId ? { ...t, ...updates } : t
-    );
-    persist({ ...state, trips: newTrips });
-  }, [state, persist]);
+    const current = state.trips.find((t) => t.id === tripId);
+    if (!current) return;
+    const updated: Trip = { ...current, ...updates };
+    const newTrips = state.trips.map((t) => (t.id === tripId ? updated : t));
+    commit({ ...state, trips: newTrips }, { put: [updated] });
+  }, [state, commit]);
 
   // Member operations
   const addMember = useCallback((name: string): Member | undefined => {
@@ -185,9 +187,9 @@ export function useTrip() {
       trips: [...state.trips, trip],
       activeTripId: trip.id,
     };
-    persist(newState);
+    commit(newState, { put: [trip], activeTripId: trip.id });
     return trip;
-  }, [state, persist]);
+  }, [state, commit]);
 
   // Export/Import
   const exportData = useCallback(() => {
@@ -205,14 +207,22 @@ export function useTrip() {
     try {
       const data = JSON.parse(jsonString) as unknown;
       if (data && typeof data === 'object' && 'trips' in data && Array.isArray((data as TripState).trips)) {
-        persist(data as TripState);
+        const imported = data as TripState;
+        const activeTripId = imported.activeTripId ?? null;
+        const importedIds = new Set(imported.trips.map((t) => t.id));
+        // Import replaces the trip list: trips missing from the file are removed.
+        commit({ trips: imported.trips, activeTripId }, {
+          put: imported.trips,
+          remove: state.trips.filter((t) => !importedIds.has(t.id)).map((t) => t.id),
+          activeTripId,
+        });
         return true;
       }
       return false;
     } catch {
       return false;
     }
-  }, [persist]);
+  }, [state, commit]);
 
   return {
     loading,

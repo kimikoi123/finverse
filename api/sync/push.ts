@@ -39,7 +39,8 @@ const MAX_BATCH = 1000;
 // Body: { changes: [{ entityType, entityId, data, updatedAt, deletedAt? }] }
 // Upserts each change with last-write-wins: the server keeps the existing
 // row if its updated_at >= incoming updated_at. Rejected rows are reported
-// back so the client can reconcile.
+// back so the client can reconcile. Every row written gets a fresh `seq`,
+// which is the cursor clients pull by (see pull.ts and schema.sql).
 export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
   if (req.method !== 'POST') return methodNotAllowed(res, ['POST']);
 
@@ -55,42 +56,60 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
       throw new HttpError(413, `Batch too large (max ${MAX_BATCH})`);
     }
 
-    const sql = getSql();
-    let applied = 0;
     const rejected: { entityId: string; reason: string }[] = [];
-
+    // Keyed by type + id. The client queue never names a row twice in one
+    // batch, but if a batch does, keep the newest: the upsert below can't
+    // touch the same row twice in a single statement.
+    const valid = new Map<string, ValidChange>();
     for (const change of changes) {
       const { value, reason } = validate(change);
       if (reason !== undefined || value === undefined) {
         rejected.push({ entityId: change.entityId ?? '', reason: reason ?? 'invalid' });
         continue;
       }
-      const { entityType, entityId, data, updatedAt, deletedAt } = value;
-
-      const result = (await sql`
-        INSERT INTO entities (vault_id, entity_type, entity_id, data, updated_at, deleted_at)
-        VALUES (
-          ${vaultId}, ${entityType}, ${entityId},
-          ${JSON.stringify(data)}::jsonb,
-          ${updatedAt},
-          ${deletedAt ?? null}
-        )
-        ON CONFLICT (vault_id, entity_type, entity_id) DO UPDATE
-          SET data = EXCLUDED.data,
-              updated_at = EXCLUDED.updated_at,
-              deleted_at = EXCLUDED.deleted_at
-          WHERE entities.updated_at < EXCLUDED.updated_at
-        RETURNING entity_id
-      `) as { entity_id: string }[];
-
-      if (result.length === 0) {
-        rejected.push({ entityId, reason: 'stale-write' });
-      } else {
-        applied++;
-      }
+      const key = `${value.entityType}:${value.entityId}`;
+      const existing = valid.get(key);
+      if (!existing || existing.updatedAt < value.updatedAt) valid.set(key, value);
     }
 
-    void sql`UPDATE vaults SET last_active_at = NOW() WHERE id = ${vaultId}`;
+    let applied = 0;
+    if (valid.size > 0) {
+      const rows = [...valid.values()].map((c) => ({
+        entity_type: c.entityType,
+        entity_id: c.entityId,
+        data: c.data,
+        updated_at: c.updatedAt,
+        deleted_at: c.deletedAt ?? null,
+      }));
+      const sql = getSql();
+      // Locking the vault row first serializes pushes to the same vault, so
+      // its rows commit in `seq` order: a pull can never see a higher seq
+      // while a lower one is still uncommitted, and then skip past it.
+      // (Neon queries are lazy — they only run when awaited or batched here.)
+      const results = await sql.transaction([
+        sql`UPDATE vaults SET last_active_at = NOW() WHERE id = ${vaultId}`,
+        sql`
+          INSERT INTO entities (vault_id, entity_type, entity_id, data, updated_at, deleted_at)
+          SELECT ${vaultId}::uuid, c.entity_type, c.entity_id,
+                 COALESCE(c.data, 'null'::jsonb), c.updated_at, c.deleted_at
+          FROM jsonb_to_recordset(${JSON.stringify(rows)}::jsonb)
+            AS c(entity_type text, entity_id text, data jsonb, updated_at bigint, deleted_at bigint)
+          ON CONFLICT (vault_id, entity_type, entity_id) DO UPDATE
+            SET data = EXCLUDED.data,
+                updated_at = EXCLUDED.updated_at,
+                deleted_at = EXCLUDED.deleted_at,
+                seq = nextval('entities_seq')
+            WHERE entities.updated_at < EXCLUDED.updated_at
+          RETURNING entity_type, entity_id
+        `,
+      ]);
+      const written = (results[1] ?? []) as { entity_type: string; entity_id: string }[];
+      const writtenKeys = new Set(written.map((r) => `${r.entity_type}:${r.entity_id}`));
+      applied = writtenKeys.size;
+      for (const [key, change] of valid) {
+        if (!writtenKeys.has(key)) rejected.push({ entityId: change.entityId, reason: 'stale-write' });
+      }
+    }
 
     sendJson(res, 200, { applied, rejected });
   } catch (err) {
@@ -124,10 +143,11 @@ function validate(change: PushChange): ValidationResult {
   if (!change.entityId || typeof change.entityId !== 'string') {
     return { reason: 'missing-entity-id' };
   }
-  if (typeof change.updatedAt !== 'number' || !Number.isFinite(change.updatedAt)) {
+  // Timestamps land in BIGINT columns; a non-integer would fail the whole batch.
+  if (typeof change.updatedAt !== 'number' || !Number.isSafeInteger(change.updatedAt)) {
     return { reason: 'invalid-updated-at' };
   }
-  if (change.deletedAt !== undefined && (typeof change.deletedAt !== 'number' || !Number.isFinite(change.deletedAt))) {
+  if (change.deletedAt !== undefined && (typeof change.deletedAt !== 'number' || !Number.isSafeInteger(change.deletedAt))) {
     return { reason: 'invalid-deleted-at' };
   }
   if (change.data === undefined) {
